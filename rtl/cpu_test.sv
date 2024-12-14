@@ -72,7 +72,7 @@ module cpu_test;
         instructions[0] = 32'h00000013; // NOP
         instructions[1] = 32'h00000013; // NOP
         instructions[2] = 32'h00000013; // NOP
-        instructions[3] = 32'h0000006F; // jal x0, 0
+        instructions[3] = 32'hFF5FF06F; // jal x0, -12 （3つ前の命令のアドレスへジャンプ）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
