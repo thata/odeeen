@@ -21,8 +21,7 @@ module bram_controller(
     // デバッグ用モニタの設定
     //------------------------
     initial begin
-        $monitor("%t: state = %d, reset_n = %b, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h", $time, state, reset_n, mem_valid, mem_ready, mem_addr, mem_wdata, mem_wstrb, mem_rdata);
-
+        // $monitor("%t: state = %d, reset_n = %b, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h", $time, state, reset_n, mem_valid, mem_ready, mem_addr, mem_wdata, mem_wstrb, mem_rdata);
     end
 
     logic [31:0] mem [0:1023];
@@ -36,18 +35,18 @@ module bram_controller(
 
     // メモリの初期化
     initial begin
-        // mem[0] = 32'b0101;
-        // mem[1] = 32'b1010;
-        for (int i = 0; i < 1024; i++) begin
-            // 以下のような感じにメモリを初期化
-            //   mem[0x0000] = 0x0000
-            //   mem[0x0004] = 0x0001
-            //   mem[0x0008] = 0x0002
-            //   mem[0x000C] = 0x0003
-            //   mem[0x0010] = 0x0004
-            //   ...
-            mem[i] = i;
-        end
+        // // mem[0] = 32'b0101;
+        // // mem[1] = 32'b1010;
+        // for (int i = 0; i < 1024; i++) begin
+        //     // 以下のような感じにメモリを初期化
+        //     //   mem[0x0000] = 0x0000
+        //     //   mem[0x0004] = 0x0001
+        //     //   mem[0x0008] = 0x0002
+        //     //   mem[0x000C] = 0x0003
+        //     //   mem[0x0010] = 0x0004
+        //     //   ...
+        //     mem[i] = i;
+        // end
     end
 
     always_ff @(posedge clk) begin

@@ -58,11 +58,37 @@ module cpu_test;
         reset_n = 0;
         #10 reset_n = 1;
 
-        // メモリへの書き込み
+        /**
+         * プログラムの書き込み
+         */
+
+        // 0000: NOP
         mem_monitor_on = 1;
         mem_monitor_valid_reg = 1;
         mem_monitor_addr_reg = 32'h00000000;
-        mem_monitor_wdata_reg = 32'h00001111;
+        mem_monitor_wdata_reg = 32'h00000013; // NOP
+        mem_monitor_wstrb_reg = 4'b1111;
+        #10;
+        wait(mem_ready);
+        mem_monitor_valid_reg = 0;
+        #10;
+
+        // 0004: NOP
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000004;
+        mem_monitor_wdata_reg = 32'h00000013; // NOP
+        mem_monitor_wstrb_reg = 4'b1111;
+        #10;
+        wait(mem_ready);
+        mem_monitor_valid_reg = 0;
+        #10;
+
+        // 0008: jal x0, 0（無限ループ）
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000008;
+        mem_monitor_wdata_reg = 32'h0000006F; // jal x0, 0
         mem_monitor_wstrb_reg = 4'b1111;
         #10;
         wait(mem_ready);
@@ -72,7 +98,7 @@ module cpu_test;
         // メモリからの読み込み
         mem_monitor_on = 1;
         mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000000;
+        mem_monitor_addr_reg = 32'h00000004;
         mem_monitor_wdata_reg = 32'h00000000;
         mem_monitor_wstrb_reg = 4'b0000;
         #10;
@@ -80,8 +106,18 @@ module cpu_test;
         mem_monitor_valid_reg = 0;
         #10;
         $display("mem_rdata = %h", mem_rdata);
+        mem_monitor_on = 0;
 
-        #100;
+        /**
+         * リセットして、0番地からプログラムを実行
+         */
+
+        reset_n = 0;
+        #10;
+        reset_n = 1;
+        #10;
+
+        #500;
 
         $finish;
     end
