@@ -53,64 +53,48 @@ module cpu_test;
     logic [31:0] mem_monitor_wdata_reg;
     logic [3:0] mem_monitor_wstrb_reg;
 
+    // 命令列
+    logic [31:0] instructions [0:255];
+    logic [31:0] addr;
+
     initial begin
         // リセット
         reset_n = 0;
         #10 reset_n = 1;
 
+        $monitoroff; // プログラム書き込み中は $monitor を一時停止
+
         /**
          * プログラムの書き込み
          */
 
-        // 0000: NOP
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000000;
-        mem_monitor_wdata_reg = 32'h00000013; // NOP
-        mem_monitor_wstrb_reg = 4'b1111;
-        #10;
-        wait(mem_ready);
-        mem_monitor_valid_reg = 0;
-        #10;
+        // 命令列を初期化
+        instructions[0] = 32'h00000013; // NOP
+        instructions[1] = 32'h00000013; // NOP
+        instructions[2] = 32'h00000013; // NOP
+        instructions[3] = 32'h0000006F; // jal x0, 0
 
-        // 0004: NOP
         mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000004;
-        mem_monitor_wdata_reg = 32'h00000013; // NOP
-        mem_monitor_wstrb_reg = 4'b1111;
-        #10;
-        wait(mem_ready);
-        mem_monitor_valid_reg = 0;
-        #10;
+        addr = 32'h00000000;
+        for (int i = 0; i < 255; i++) begin
+            mem_monitor_valid_reg = 1;
+            mem_monitor_addr_reg = addr;
+            mem_monitor_wdata_reg = instructions[i];
+            mem_monitor_wstrb_reg = 4'b1111;
+            #10;
+            wait(mem_ready);
+            mem_monitor_valid_reg = 0;
+            #10;
 
-        // 0008: jal x0, 0（無限ループ）
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000008;
-        mem_monitor_wdata_reg = 32'h0000006F; // jal x0, 0
-        mem_monitor_wstrb_reg = 4'b1111;
-        #10;
-        wait(mem_ready);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリからの読み込み
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000004;
-        mem_monitor_wdata_reg = 32'h00000000;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        mem_monitor_valid_reg = 0;
-        #10;
-        $display("mem_rdata = %h", mem_rdata);
+            // 書き込みアドレスを進める
+            addr = addr + 4;
+        end
         mem_monitor_on = 0;
 
         /**
          * リセットして、0番地からプログラムを実行
          */
+        $monitoron; // $monitor を再開
 
         reset_n = 0;
         #10;
