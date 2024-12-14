@@ -1,3 +1,5 @@
+`include "instructions.sv"
+
 // CPUのテストベンチ
 //  $ iverilog -s cpu_test cpu_test.sv cpu.sv && ./a.out
 module cpu_test;
@@ -69,10 +71,15 @@ module cpu_test;
          */
 
         // 命令列を初期化
-        instructions[0] = 32'h00000013; // NOP
-        instructions[1] = 32'h00000013; // NOP
-        instructions[2] = 32'h00000013; // NOP
-        instructions[3] = 32'hFF5FF06F; // jal x0, -12 （3つ前の命令のアドレスへジャンプ）
+        // 1 + 2 + 3 + ... + 10 = 55
+        instructions[0] = addi(1, 0, 10); // x1 = 10
+        instructions[1] = addi(2, 0, 20); // x2 = 20
+        instructions[2] = add(1, 1, 2);   // x1 = x1 + x2 = 30
+        instructions[3] = jal(0, 0); // 無限ループ
+        // instructions[0] = add(0, 0, 0); // nop
+        // instructions[1] = add(0, 0, 0); // nop
+        // instructions[2] = add(0, 0, 0); // nop
+        // instructions[3] = 32'hFF5FF06F; // jal x0, -12 （3つ前の命令のアドレスへジャンプ）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -101,7 +108,7 @@ module cpu_test;
         reset_n = 1;
         #10;
 
-        #500;
+        #1000;
 
         $finish;
     end

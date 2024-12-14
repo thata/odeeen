@@ -12,17 +12,28 @@ module cpu(
     input logic [31:0] mem_rdata
 );
 
-    //------------------------
+    //-------------------------------------
+    // 外部の信号線と接続
+    //-------------------------------------
+    assign mem_valid = mem_valid_reg;
+    assign mem_addr = mem_addr_reg;
+    assign mem_wdata = mem_wdata_reg;
+    assign mem_wstrb = mem_wstrb_reg;
+    assign mem_instr = (stage_reg == IF_STAGE);
+
+
+    //-------------------------------------
     // デバッグ用モニタ
-    //------------------------
+    //-------------------------------------
     initial begin
         $monitor(
-            "%t: pc = %h, stage = %d, instr = %h, imm = %h, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h",
+            "%t: pc = %h, stage = %d, instr = %h, imm = %h, alu_result = %h, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h",
             $time,
             pc_reg,
             stage_reg,
             instr_reg,
             imm,
+            alu_result,
             mem_valid_reg,
             mem_ready,
             mem_addr_reg,
@@ -32,8 +43,20 @@ module cpu(
         );
     end
 
+    //-------------------------------------
     // デコーダ
     // 命令をデコードして制御信号を生成する
+    //-------------------------------------
+    logic dc_mem_write;
+    logic dc_reg_write;
+    logic alu_in1_src;
+    logic alu_in2_src;
+    logic [3:0] alu_op;
+    logic dc_mem_to_reg;
+    logic branch;
+    logic jump;
+    logic jump_reg;
+
     decoder decoder_inst(
         .instr(instr_reg),
         .memWrite(dc_mem_write),
@@ -47,16 +70,68 @@ module cpu(
         .jumpReg(jump_reg)
     );
 
+    //-------------------------------------
     // 即値生成器
     // 命令から即値を取り出す
+    //-------------------------------------
+    logic [31:0] imm;
+
     immgen immgen_inst(
         .instr(instr_reg),
         .imm(imm)
     );
 
+    //-------------------------------------
+    // ALU
+    //-------------------------------------
+    logic [31:0] alu_in1, alu_in2, alu_result;
+    logic alu_negative, alu_zero;
+
+    assign alu_in1 = (alu_in1_src) ? rf_read_data1 : 32'b0;
+    assign alu_in2 = (alu_in2_src) ? rf_read_data2 : imm;
+
+    alu alu_inst(
+        .in1(alu_in1),
+        .in2(alu_in2),
+        .op(alu_op),
+        .result(alu_result),
+        .negative(alu_negative),
+        .zero(alu_zero)
+    );
+
+    //-------------------------------------
+    // Register File
+    //-------------------------------------
+    logic rf_we3;
+    logic [4:0] rf_addr1, rf_addr2, rf_addr3;
+    logic [31:0] rf_write_data3, rf_read_data1, rf_read_data2;
+
+    assign rf_addr1 = instr_reg[19:15]; // rs1
+    assign rf_addr2 = instr_reg[24:20]; // rs2
+    assign rf_addr3 = instr_reg[11:7];  // rd
+    assign rf_we3 = (stage_reg == EX_STAGE) && dc_reg_write;
+    assign rf_write_data3 = alu_result;
+    // assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata :
+    //                         (jump)          ? pc_reg + 4
+    //                                         : alu_result;
+
+    regfile regfile_inst(
+        .clk(clk),
+        .reset_n(reset_n),
+        .we3(rf_we3),
+        .addr1(rf_addr1),
+        .addr2(rf_addr2),
+        .addr3(rf_addr3),
+        .writeData3(rf_write_data3),
+        .readData1(rf_read_data1),
+        .readData2(rf_read_data2)
+    );
+
+    //-------------------------------------
     // CPU ステージ
     //  if_stage: 命令フェッチステージ
     //  ex_stage: 実行ステージ
+    //-------------------------------------
     typedef enum { IF_STAGE, EX_STAGE, ERR_STAGE } stage_t;
     stage_t stage_reg, stage_next;
 
@@ -72,25 +147,6 @@ module cpu(
     logic [31:0] mem_wdata_reg, mem_wdata_next;
     logic [3:0] mem_wstrb_reg, mem_wstrb_next;
 
-    // 制御信号
-    logic dc_mem_write;
-    logic dc_reg_write;
-    logic alu_in1_src;
-    logic alu_in2_src;
-    logic [3:0] alu_op;
-    logic dc_mem_to_reg;
-    logic branch;
-    logic jump;
-    logic jump_reg;
-
-    // 即値
-    logic [31:0] imm;
-
-    assign mem_valid = mem_valid_reg;
-    assign mem_addr = mem_addr_reg;
-    assign mem_wdata = mem_wdata_reg;
-    assign mem_wstrb = mem_wstrb_reg;
-    assign mem_instr = (stage_reg == IF_STAGE);
 
     always_ff @(posedge clk) begin
         if (!reset_n) begin
@@ -200,6 +256,7 @@ module decoder(
                     (opCode === 7'b1100011) ? 1'b1   // B type
                                             : 1'b0;
 
+    // lw
     assign memToReg = (opCode == 7'b0000011) ? 1'b1 : 1'b0;
 
     assign branch = (opCode === 7'b1100011) ? 1'b1 // B type
@@ -309,5 +366,91 @@ module immgen(
     //     $display("imm13 %b", imm13);
     //     $display("imm21 %b", imm21);
     //     $display("imm %b", imm);
+    // end
+endmodule
+
+// ALU
+//
+// code | operations
+// ------------------
+// 0000 | add
+// 0001 | sub
+// 0010 | sll
+// 0011 | slt
+// 0100 | sltu
+// 0101 | xor
+// 0110 | srl
+// 0111 | sra
+// 1000 | or
+// 1001 | and
+// ------------------
+module alu(
+    input logic [31:0] in1, in2,
+    input logic [3:0] op,
+    output logic [31:0] result,
+    output logic negative, zero
+);
+    logic [31:0] sraResult;
+    logic [31:0] sltResult;
+    logic [31:0] sltuResult;
+
+    assign sraResult = $signed(in1) >>> in2;
+    assign sltResult = ($signed(in1) < $signed(in2)) ? 32'b1 : 32'b0;
+    assign sltuResult = (in1 < in2) ? 32'b1 : 32'b0;
+
+    assign result = (op == 4'b0000) ? (in1 + in2)  :  // plus
+                    (op == 4'b0001) ? (in1 - in2)  :  // minus
+                    (op == 4'b1001) ? (in1 & in2)  :  // and
+                    (op == 4'b1000) ? (in1 | in2)  :  // or
+                    (op == 4'b0101) ? (in1 ^ in2)  :  // xor
+                    (op == 4'b0010) ? (in1 << in2) :  // sll (shift left logical)
+                    (op == 4'b0110) ? (in1 >> in2) :  // srl (shift right logical)
+                    (op == 4'b0111) ? sraResult    :  // sra (shift right arithmetic)
+                    (op == 4'b0011) ? sltResult    :  // slt
+                    (op == 4'b0100) ? sltuResult      // sltu
+                                    : 32'hxxxxxxxx;
+    assign negative = result[31];
+    assign zero = ~|result;
+
+    // always @(*) begin
+    //     $display("op %b", op);
+    //     $display("in1 %b", in1);
+    //     $display("in2 %b", in2);
+    //     $display("result %b", result);
+    //     $display("zero %b", zero);
+    // end
+endmodule
+
+// Register File
+module regfile(
+    input logic clk,
+    input logic reset_n,
+    input logic we3,
+    input logic [4:0] addr1, addr2, addr3,
+    input logic [31:0] writeData3,
+    output logic [31:0] readData1, readData2
+);
+
+    // $0 へは書き込めるけど参照しても常に 0 が返る
+    logic [31:0] registers [0:31];
+
+    assign readData1 = (addr1 === 5'b0) ? 32'b0 : registers[addr1];
+    assign readData2 = (addr2 === 5'b0) ? 32'b0 : registers[addr2];
+
+    always_ff @(posedge clk) begin
+        if (!reset_n) begin
+            for (int i = 0; i < 32; i++) begin
+                registers[i] <= 32'b0;
+            end
+        end else if (we3) begin
+            registers[addr3] <= writeData3;
+        end
+    end
+
+    // always @(*) begin
+    //     $display("$1 %b", registers[1]);
+    //     $display("$2 %b", registers[2]);
+    //     $display("$30 %b", registers[30]);
+    //     $display("$31 %b", registers[31]);
     // end
 endmodule
