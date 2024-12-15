@@ -71,10 +71,9 @@ module cpu_test;
          */
 
         // 命令列を初期化
-        // 1 + 2 + 3 + ... + 10 = 55
         instructions[0] = addi(1, 0, 10); // x1 = 10
         instructions[1] = addi(2, 0, 20); // x2 = 20
-        instructions[2] = add(1, 1, 2);   // x1 = x1 + x2 = 30
+        instructions[2] = add(1, 1, 2);   // x1 = x1 + x2
         instructions[3] = jal(0, 0); // 無限ループ
         // instructions[0] = add(0, 0, 0); // nop
         // instructions[1] = add(0, 0, 0); // nop
