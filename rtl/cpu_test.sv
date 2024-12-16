@@ -17,7 +17,7 @@ module cpu_test;
         .mem_rdata(mem_rdata)
     );
 
-    bram_controller prog_ram (
+    bram_controller ram (
         .clk(clk),
         .reset_n(reset_n),
         .mem_valid(mem_monitor_on ? mem_monitor_valid_reg : mem_valid),
@@ -71,10 +71,15 @@ module cpu_test;
          */
 
         // 命令列を初期化
-        instructions[0] = addi(1, 0, 10); // x1 = 10
-        instructions[1] = addi(2, 0, 20); // x2 = 20
-        instructions[2] = add(1, 1, 2);   // x1 = x1 + x2
-        instructions[3] = jal(0, 0); // 無限ループ
+        instructions[0] = addi(1, 0, 10);   // x1 = 10
+        instructions[1] = addi(2, 0, 20);   // x2 = 20
+        instructions[2] = add(1, 1, 2);     // x1 = x1 + x2
+
+        // instructions[3] = jal(0, 0);        // 無限ループ
+        instructions[3] = sw(0, 1, 12'h80); // M[x0 + 0x80] = x1
+
+        instructions[4] = jal(0, 0);        // 無限ループ
+
         // instructions[0] = add(0, 0, 0); // nop
         // instructions[1] = add(0, 0, 0); // nop
         // instructions[2] = add(0, 0, 0); // nop
@@ -108,6 +113,17 @@ module cpu_test;
         #10;
 
         #1000;
+
+        // 実行が終わった頃合いを見て、メモリの0番地の内容を確認
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000080;
+        mem_monitor_wstrb_reg = 4'b0000;
+        #10;
+        wait(mem_ready);
+        $display("mem[0x80] = %h", mem_rdata);
+        mem_monitor_valid_reg = 0;
+        #10;
 
         $finish;
     end

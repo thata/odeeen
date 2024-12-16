@@ -109,7 +109,7 @@ module cpu(
     assign rf_addr1 = instr_reg[19:15]; // rs1
     assign rf_addr2 = instr_reg[24:20]; // rs2
     assign rf_addr3 = instr_reg[11:7];  // rd
-    assign rf_we3 = (stage_reg == EX_STAGE) && dc_reg_write;
+    assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
     assign rf_write_data3 = alu_result;
     // assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata :
     //                         (jump)          ? pc_reg + 4
@@ -129,10 +129,12 @@ module cpu(
 
     //-------------------------------------
     // CPU ステージ
-    //  if_stage: 命令フェッチステージ
-    //  ex_stage: 実行ステージ
+    //  IF: 命令フェッチステージ
+    //  EX: 実行ステージ
+    //  MEM: メモリアクセスステージ
+    //  WB: レジスタ書き戻し（writeback)
     //-------------------------------------
-    typedef enum { IF_STAGE, EX_STAGE, ERR_STAGE } stage_t;
+    typedef enum { IF_STAGE, EX_STAGE, MEM_STAGE, WB_STAGE, ERR_STAGE } stage_t;
     stage_t stage_reg, stage_next;
 
     // プログラムカウンタ
@@ -146,6 +148,7 @@ module cpu(
     logic [31:0] mem_addr_reg, mem_addr_next;
     logic [31:0] mem_wdata_reg, mem_wdata_next;
     logic [3:0] mem_wstrb_reg, mem_wstrb_next;
+    logic [31:0] mem_rdata_reg, mem_rdata_next;
 
 
     always_ff @(posedge clk) begin
@@ -157,6 +160,7 @@ module cpu(
             mem_addr_reg = 32'h00000000;
             mem_wdata_reg = 32'h00000000;
             mem_wstrb_reg = 4'b0000;
+            mem_rdata_reg = 32'h00000000;
         end else begin
             stage_reg <= stage_next;
             pc_reg <= pc_next;
@@ -165,6 +169,7 @@ module cpu(
             mem_addr_reg <= mem_addr_next;
             mem_wdata_reg <= mem_wdata_next;
             mem_wstrb_reg <= mem_wstrb_next;
+            mem_rdata_reg <= mem_rdata_next;
         end
     end
 
@@ -176,19 +181,55 @@ module cpu(
         mem_addr_next = mem_addr_reg;
         mem_wdata_next = mem_wdata_reg;
         mem_wstrb_next = mem_wstrb_reg;
+        mem_rdata_next = mem_rdata_reg;
 
         case (stage_reg)
             IF_STAGE: begin
-                mem_addr_next = pc_reg;
                 mem_valid_next = 1;
+                mem_addr_next = pc_reg;
+                mem_wstrb_next = 4'b0000;
+                mem_wdata_next = 32'h00000000;
+
                 if (mem_valid_reg && mem_ready) begin
                     mem_valid_next = 0;     // 命令のフェッチが終わったので VALID をデアサート
+                    mem_rdata_next = mem_rdata;
                     instr_next = mem_rdata; // フェッチした命令をレジスタへ格納
-                    stage_next = EX_STAGE;  // 実行ステージへ
+                    stage_next = EX_STAGE;  // EX ステージへ
                 end
             end
             EX_STAGE: begin
-                stage_next = IF_STAGE; // 命令フェッチステージへ
+                // LW または SW の場合はは MEM ステージへ
+                // それ以外は WB ステージへ
+                if (dc_mem_to_reg || dc_mem_write) begin
+                    stage_next = MEM_STAGE;
+                end else begin
+                    stage_next = WB_STAGE;
+                end
+            end
+            MEM_STAGE: begin
+                stage_next = stage_reg;
+                mem_valid_next = mem_valid_reg;
+                mem_addr_next = mem_addr_reg;
+                mem_valid_next = mem_valid_reg;
+                mem_wstrb_next = mem_wstrb_reg;
+                mem_rdata_next = mem_rdata_reg;
+
+                if (mem_valid_reg && mem_ready) begin
+                    // メモリ読み込み終了
+                    mem_valid_next = 0;
+                    stage_next = WB_STAGE;
+                end
+
+                // SW の場合
+                if (dc_mem_write) begin
+                    mem_valid_next = 1;
+                    mem_addr_next = alu_result;
+                    mem_wdata_next = rf_read_data2;
+                    mem_wstrb_next = 4'b1111;
+                end
+            end
+            WB_STAGE: begin
+                stage_next = IF_STAGE; // IF ステージへ
 
                 if (jump) begin
                     pc_next = pc_reg + imm;
@@ -447,10 +488,10 @@ module regfile(
         end
     end
 
-    // always @(*) begin
-    //     $display("$1 %b", registers[1]);
-    //     $display("$2 %b", registers[2]);
-    //     $display("$30 %b", registers[30]);
-    //     $display("$31 %b", registers[31]);
-    // end
+    always @(*) begin
+        $display("$1 %b", registers[1]);
+        // $display("$2 %b", registers[2]);
+        // $display("$30 %b", registers[30]);
+        // $display("$31 %b", registers[31]);
+    end
 endmodule

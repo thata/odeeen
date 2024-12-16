@@ -35,18 +35,9 @@ module bram_controller(
 
     // メモリの初期化
     initial begin
-        // // mem[0] = 32'b0101;
-        // // mem[1] = 32'b1010;
-        // for (int i = 0; i < 1024; i++) begin
-        //     // 以下のような感じにメモリを初期化
-        //     //   mem[0x0000] = 0x0000
-        //     //   mem[0x0004] = 0x0001
-        //     //   mem[0x0008] = 0x0002
-        //     //   mem[0x000C] = 0x0003
-        //     //   mem[0x0010] = 0x0004
-        //     //   ...
-        //     mem[i] = i;
-        // end
+        for (int i = 0; i < 1024; i++) begin
+            mem[i] = 32'hDEADBEEF;
+        end
     end
 
     always_ff @(posedge clk) begin
@@ -77,6 +68,10 @@ module bram_controller(
                 mem_ready_next = 0;
             end
             STATE_RECV_VALID: begin
+                // 1クロックでは rdata が反映されみたいなので、もう1クロック追加
+                state_next = STATE_RECV_VALID2;
+            end
+            STATE_RECV_VALID2: begin
                 state_next = STATE_SEND_READY;
                 mem_ready_next = 1;
             end
@@ -90,4 +85,9 @@ module bram_controller(
             end
         endcase
     end
+
+    // always @(*) begin
+    //     // 0x80番地のデータをデバッグ出力
+    //     $display("mem[80] = %h", mem[32'h80]);
+    // end
 endmodule
