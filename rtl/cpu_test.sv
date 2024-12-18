@@ -75,7 +75,8 @@ module cpu_test;
         instructions[0] = addi(1, 0, 10);   // addi x1, x0, 10
         instructions[1] = add(2, 1, 1);     // addi x2, x1, x1
         instructions[2] = add(3, 1, 2);     // addi x3, x1, x2
-        instructions[3] = jal(0, -12 >> 1); // jal x0, -12 （0番地へ戻る）
+        instructions[3] = sw(0, 3, 32'h80); // sw x3, 0x80(x0) （メモリの 0x80 番地へ x3 の値を格納する）
+        instructions[4] = jal(0, -16 >> 1); // jal x0, -16 （0番地へ戻る）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -104,7 +105,19 @@ module cpu_test;
         reset_n = 1;
         #10;
 
-        #500;
+        #1000;
+
+        // 実行が終わった頃合いを見て、メモリの 0x80 番地の内容を確認
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000080;
+        mem_monitor_wstrb_reg = 4'b0000;
+        #10;
+        wait(mem_ready);
+        $display("mem[0x80] = %d", mem_rdata);
+        mem_monitor_valid_reg = 0;
+        #10;
+
 
         $finish;
     end

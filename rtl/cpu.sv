@@ -35,11 +35,15 @@ module cpu(
     // CPU ステージ
     //  IF_STAGE: 命令フェッチ
     //  EX_STAGE: 実行
+    //  MEM_STAGE: メモリアクセス
+    //  WB_STAGE: レジスタ書き戻し（writeback)
     //  ERR_STAGE: エラー
     //-------------------------------------
     typedef enum {
         IF_STAGE,
         EX_STAGE,
+        MEM_STAGE,
+        WB_STAGE,
         ERR_STAGE
     } stage_t;
     stage_t stage_reg, stage_next;
@@ -50,12 +54,15 @@ module cpu(
     //-------------------------------------
     // 出力信号
     //-------------------------------------
-    assign mem_valid = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;
+    assign mem_valid = (stage_reg == IF_STAGE | stage_reg == MEM_STAGE) ? 1'b1 : 1'b0;
     assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;
-    assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg : 32'h00000000;
-    assign mem_wdata = 32'h00000000; // TODO
-    assign mem_wstrb = 4'b0000; // TODO
-
+    assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg :
+                      (stage_reg == MEM_STAGE) ? alu_result
+                                               : 32'h00000000;
+    assign mem_wdata = (stage_reg == MEM_STAGE && dc_mem_write) ? rf_read_data2
+                                                                : 32'h00000000;
+    assign mem_wstrb = (stage_reg == MEM_STAGE && dc_mem_write) ? 4'b1111
+                                                                : 4'b0000;
 
     //-------------------------------------
     // デコーダ
@@ -135,7 +142,7 @@ module cpu(
     assign rf_addr1 = instr_reg[19:15]; // rs1
     assign rf_addr2 = instr_reg[24:20]; // rs2
     assign rf_addr3 = instr_reg[11:7];  // rd
-    assign rf_we3 = (stage_reg == EX_STAGE) && dc_reg_write;
+    assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
     assign rf_write_data3 = alu_result;
     // assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata :
     //                         (jump)          ? pc_reg + 4
@@ -160,6 +167,7 @@ module cpu(
         pc_next = pc_reg;
 
         case (stage_reg)
+            // 命令フェッチ
             IF_STAGE: begin
                 if (mem_ready) begin
                     instr_next = mem_rdata;
@@ -169,8 +177,23 @@ module cpu(
                     stage_next = IF_STAGE;
                 end
             end
+            // 実行
             EX_STAGE: begin
+                stage_next = MEM_STAGE;
+            end
+            // メモリアクセス
+            MEM_STAGE: begin
+                // メモリへの書き込み
+                if (dc_mem_write) begin
+                    // TODO
+                end
+
+                stage_next = WB_STAGE;
+            end
+            // レジスタ書き戻し
+            WB_STAGE: begin
                 if (jump) begin
+                    // jal 命令の場合
                     pc_next = pc_reg + imm;
                 end else begin
                     // それ以外の場合は次の命令へ
