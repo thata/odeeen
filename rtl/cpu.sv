@@ -45,6 +45,7 @@ module cpu(
     logic [31:0] pc_reg, pc_next;       // PC
     logic [31:0] instr_reg, instr_next; // フェッチした命令
 
+    // 出力信号
     assign mem_valid = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;
     assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;
     assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg : 32'h00000000;
