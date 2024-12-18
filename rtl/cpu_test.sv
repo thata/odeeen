@@ -72,10 +72,10 @@ module cpu_test;
          * プログラムの書き込み
          */
 
-        instructions[0] = 32'h00000013; // nop
-        instructions[1] = 32'h00000013; // nop
-        instructions[2] = 32'h00000013; // nop
-        instructions[3] = 32'h0000006F; // jal x0, 0（無限ループ）
+        instructions[0] = add(0, 0, 0);     // nop
+        instructions[1] = add(0, 0, 0);     // nop
+        instructions[2] = add(0, 0, 0);     // nop
+        instructions[3] = jal(0, -12 >> 1); // jal x0, -12 （0番地へ戻る）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
