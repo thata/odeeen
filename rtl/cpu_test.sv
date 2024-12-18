@@ -1,7 +1,6 @@
 `include "instructions.sv"
 
 // CPUのテストベンチ
-//  $ iverilog -s cpu_test cpu_test.sv cpu.sv && ./a.out
 module cpu_test;
 
     // CPUのインスタンス
@@ -60,6 +59,9 @@ module cpu_test;
     logic [31:0] addr;
 
     initial begin
+        $dumpfile("cpu_test.vcd");
+        $dumpvars(0, cpu_inst);
+
         // リセット
         reset_n = 0;
         #10 reset_n = 1;
@@ -70,20 +72,10 @@ module cpu_test;
          * プログラムの書き込み
          */
 
-        // 命令列を初期化
-        instructions[0] = addi(1, 0, 10);   // x1 = 10
-        instructions[1] = addi(2, 0, 20);   // x2 = 20
-        instructions[2] = add(1, 1, 2);     // x1 = x1 + x2
-
-        // instructions[3] = jal(0, 0);        // 無限ループ
-        instructions[3] = sw(0, 1, 12'h80); // M[x0 + 0x80] = x1
-
-        instructions[4] = jal(0, 0);        // 無限ループ
-
-        // instructions[0] = add(0, 0, 0); // nop
-        // instructions[1] = add(0, 0, 0); // nop
-        // instructions[2] = add(0, 0, 0); // nop
-        // instructions[3] = 32'hFF5FF06F; // jal x0, -12 （3つ前の命令のアドレスへジャンプ）
+        instructions[0] = 32'h00000013; // nop
+        instructions[1] = 32'h00000013; // nop
+        instructions[2] = 32'h00000013; // nop
+        instructions[3] = 32'h0000006F; // jal x0, 0（無限ループ）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -102,28 +94,17 @@ module cpu_test;
         end
         mem_monitor_on = 0;
 
+        $monitoron; // $monitor を再開
+
         /**
          * リセットして、0番地からプログラムを実行
          */
-        $monitoron; // $monitor を再開
-
         reset_n = 0;
         #10;
         reset_n = 1;
         #10;
 
-        #1000;
-
-        // 実行が終わった頃合いを見て、メモリの0番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000080;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x80] = %h", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
+        #500;
 
         $finish;
     end
