@@ -76,7 +76,9 @@ module cpu_test;
         instructions[1] = add(2, 1, 1);     // addi x2, x1, x1
         instructions[2] = add(3, 1, 2);     // addi x3, x1, x2
         instructions[3] = sw(0, 3, 32'h80); // sw x3, 0x80(x0) （メモリの 0x80 番地へ x3 の値を格納する）
-        instructions[4] = jal(0, -16 >> 1); // jal x0, -16 （0番地へ戻る）
+        instructions[4] = lw(4, 0, 32'h80); // lw x4, 0x80(x0) （メモリの 0x80 番地から x4 へ読み込む）
+        instructions[5] = sw(0, 4, 32'h84); // sw x4, 0x84(x0) （メモリの 0x84 番地へ x4 の値を格納する）
+        instructions[6] = jal(0, -24 >> 1); // jal x0, -24 （0番地へ戻る）
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -118,6 +120,16 @@ module cpu_test;
         mem_monitor_valid_reg = 0;
         #10;
 
+        // メモリの 0x84 番地の内容を確認
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000084;
+        mem_monitor_wstrb_reg = 4'b0000;
+        #10;
+        wait(mem_ready);
+        $display("mem[0x84] = %d", mem_rdata);
+        mem_monitor_valid_reg = 0;
+        #10;
 
         $finish;
     end

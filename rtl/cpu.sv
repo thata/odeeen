@@ -48,8 +48,9 @@ module cpu(
     } stage_t;
     stage_t stage_reg, stage_next;
 
-    logic [31:0] pc_reg, pc_next;       // PC
-    logic [31:0] instr_reg, instr_next; // フェッチした命令
+    logic [31:0] pc_reg, pc_next;               // PC
+    logic [31:0] instr_reg, instr_next;         // フェッチした命令
+    logic [31:0] mem_rdata_reg, mem_rdata_next; // lw でメモリから読み込んだデータ
 
     //-------------------------------------
     // 出力信号
@@ -107,10 +108,12 @@ module cpu(
             stage_reg <= IF_STAGE;
             pc_reg <= 0;
             instr_reg <= 32'h00000000;
+            mem_rdata_reg <= 32'h00000000;
         end else begin
             stage_reg <= stage_next;
             pc_reg <= pc_next;
             instr_reg <= instr_next;
+            mem_rdata_reg <= mem_rdata_next;
         end
     end
 
@@ -143,7 +146,9 @@ module cpu(
     assign rf_addr2 = instr_reg[24:20]; // rs2
     assign rf_addr3 = instr_reg[11:7];  // rd
     assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
-    assign rf_write_data3 = alu_result;
+
+    assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg
+                                            : alu_result;
     // assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata :
     //                         (jump)          ? pc_reg + 4
     //                                         : alu_result;
@@ -164,16 +169,17 @@ module cpu(
         // デフォルト値
         stage_next = stage_reg;
         instr_next = instr_reg;
+        mem_rdata_next = mem_rdata_reg;
         pc_next = pc_reg;
 
         case (stage_reg)
             // 命令フェッチ
             IF_STAGE: begin
                 if (mem_ready) begin
+                    // メモリから命令を取得
                     instr_next = mem_rdata;
                     stage_next = EX_STAGE;
                 end else begin
-                    instr_next = instr_reg;
                     stage_next = IF_STAGE;
                 end
             end
@@ -183,12 +189,13 @@ module cpu(
             end
             // メモリアクセス
             MEM_STAGE: begin
-                // メモリへの書き込み
-                if (dc_mem_write) begin
-                    // TODO
+                if (mem_ready) begin
+                    // メモリからデータを取得
+                    mem_rdata_next = mem_rdata;
+                    stage_next = WB_STAGE;
+                end else begin
+                    stage_next = MEM_STAGE;
                 end
-
-                stage_next = WB_STAGE;
             end
             // レジスタ書き戻し
             WB_STAGE: begin
