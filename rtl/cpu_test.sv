@@ -72,9 +72,9 @@ module cpu_test;
          * プログラムの書き込み
          */
 
-        instructions[0] = add(0, 0, 0);     // nop
-        instructions[1] = add(0, 0, 0);     // nop
-        instructions[2] = add(0, 0, 0);     // nop
+        instructions[0] = addi(1, 0, 10);   // addi x1, x0, 10
+        instructions[1] = add(2, 1, 1);     // addi x2, x1, x1
+        instructions[2] = add(3, 1, 2);     // addi x3, x1, x2
         instructions[3] = jal(0, -12 >> 1); // jal x0, -12 （0番地へ戻る）
 
         mem_monitor_on = 1;
