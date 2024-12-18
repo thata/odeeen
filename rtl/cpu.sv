@@ -55,15 +55,15 @@ module cpu(
     //-------------------------------------
     // 出力信号
     //-------------------------------------
-    assign mem_valid = (stage_reg == IF_STAGE | stage_reg == MEM_STAGE) ? 1'b1 : 1'b0;
-    assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;
-    assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg :
-                      (stage_reg == MEM_STAGE) ? alu_result
+    assign mem_valid = (stage_reg == IF_STAGE | stage_reg == MEM_STAGE) ? 1'b1 : 1'b0; // メモリの読み書きを行う場合、アドレスを指定すると共に VALID 信号をアサート
+    assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0; // 今回はこの信号を使わないけど、念のため実装しておく
+    assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg :       // 命令フェッチの場合
+                      (stage_reg == MEM_STAGE) ? alu_result    // lw または sw の場合
                                                : 32'h00000000;
-    assign mem_wdata = (stage_reg == MEM_STAGE && dc_mem_write) ? rf_read_data2
+    assign mem_wdata = (stage_reg == MEM_STAGE && dc_mem_write) ? rf_read_data2 // sw の場合
                                                                 : 32'h00000000;
-    assign mem_wstrb = (stage_reg == MEM_STAGE && dc_mem_write) ? 4'b1111
-                                                                : 4'b0000;
+    assign mem_wstrb = (stage_reg == MEM_STAGE && dc_mem_write) ? 4'b1111  // メモリ書き込み
+                                                                : 4'b0000; // メモリ読み込み
 
     //-------------------------------------
     // デコーダ
