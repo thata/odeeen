@@ -1,3 +1,5 @@
+`define __INSTRUCTIONS__
+
 // lw rd, imm(rs1)
 // rd = M[rs1+imm]
 function [31:0] lw(

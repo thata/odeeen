@@ -1,4 +1,6 @@
+`ifndef __INSTRUCTIONS__
 `include "instructions.sv"
+`endif
 
 // CPUのテストベンチ
 module cpu_test;
