@@ -146,12 +146,9 @@ module cpu(
     assign rf_addr2 = instr_reg[24:20]; // rs2
     assign rf_addr3 = instr_reg[11:7];  // rd
     assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
-
-    assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg
+    assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg : // lw の場合
+                            (jump)          ? pc_reg + 4      // jal, jalr の場合
                                             : alu_result;
-    // assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata :
-    //                         (jump)          ? pc_reg + 4
-    //                                         : alu_result;
 
     regfile regfile_inst(
         .clk(clk),
@@ -200,8 +197,8 @@ module cpu(
             // レジスタ書き戻し
             WB_STAGE: begin
                 if (jump) begin
-                    // jal 命令の場合
-                    pc_next = pc_reg + imm;
+                    pc_next = (jump_reg) ? rf_read_data1 + imm // jalr の場合
+                                         : pc_reg + imm;        // jal の場合
                 end else if (branch) begin
                     // beq 命令の場合
                     pc_next = (alu_zero) ?
@@ -471,6 +468,8 @@ module regfile(
         $display("x1 %d", registers[1]);
         $display("x2 %d", registers[2]);
         $display("x3 %d", registers[3]);
+        $display("x5 %d", registers[5]);
+        $display("x10 %d", registers[10]);
         // $display("$2 %b", registers[2]);
         // $display("$30 %b", registers[30]);
         // $display("$31 %b", registers[31]);

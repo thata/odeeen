@@ -90,8 +90,18 @@ module cpu_test;
         instructions[12] = sw(0, 7, 32'h8C);           // M[0x8C] = x7
         instructions[13] = ori(7, 7, 32'h0678);        // x7 = x7 | 0x678
         instructions[14] = sw(0, 7, 32'h90);           // M[0x90] = x7
-        // 0番地へ戻る
-        instructions[15] = jal(0, -60 >> 1); // jal x0, -60 （0番地へ戻る）
+        // jal と jalr で関数呼び出し
+        instructions[15] = addi(10, 0, 100);   // x10 = 100
+        instructions[16] = jal(1, 12 >> 1);    // jal x1, 12 （double 関数を呼び出す）
+        instructions[17] = sw(0, 10, 32'h94);  // M[0x94] = x10
+        // 無限ループ
+        instructions[18] = jal(0, 0);
+        // double 関数
+        // x10 に渡した値を二倍にして x10 へ入れて返す関数
+        instructions[19] = addi(5, 10, 0); // x5 = x10
+        instructions[20] = add(10, 5, 5); // x10 = x5 + x5
+        instructions[21] = jalr(0, 1, 0); // jalr x0, x1, 0
+
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -174,6 +184,17 @@ module cpu_test;
         #10;
         wait(mem_ready);
         $display("mem[0x90] = %h", mem_rdata);
+        mem_monitor_valid_reg = 0;
+        #10;
+
+        // メモリの 0x94 番地の内容を確認
+        mem_monitor_on = 1;
+        mem_monitor_valid_reg = 1;
+        mem_monitor_addr_reg = 32'h00000094;
+        mem_monitor_wstrb_reg = 4'b0000;
+        #10;
+        wait(mem_ready);
+        $display("mem[0x94] = %d", mem_rdata);
         mem_monitor_valid_reg = 0;
         #10;
 
