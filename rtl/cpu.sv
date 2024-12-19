@@ -202,6 +202,11 @@ module cpu(
                 if (jump) begin
                     // jal 命令の場合
                     pc_next = pc_reg + imm;
+                end else if (branch) begin
+                    // beq 命令の場合
+                    pc_next = (alu_zero) ?
+                        pc_reg + imm : // rs1 == rs2 の場合
+                        pc_reg + 4;
                 end else begin
                     // それ以外の場合は次の命令へ
                     pc_next = pc_reg + 4;
