@@ -17,7 +17,8 @@ module ulx3s_top(
         .mem_addr(mem_addr),
         .mem_wdata(mem_wdata),
         .mem_wstrb(mem_wstrb),
-        .mem_rdata(mem_rdata)
+        .mem_rdata(mem_rdata),
+        .peek(peek)
     );
 
     logic clk, reset_n;
@@ -25,6 +26,8 @@ module ulx3s_top(
     logic [31:0] mem_addr, mem_wdata, mem_rdata;
     logic [3:0] mem_wstrb;
 
+    // デバッグ用の信号線
+    logic [31:0] peek;
 
     // メモリコントローラのインスタンス
     bram_controller bram_ctl (
@@ -81,6 +84,8 @@ module ulx3s_top(
     assign clk = clk_25mhz;
     assign reset_n = btn[0]; // btn[0] は押すとデアサートされる
     assign led = led_ctl_mem_rdata[7:0];
+    // assign led = peek[7:0];
+
 
 endmodule
 

@@ -9,8 +9,14 @@ module cpu(
     output logic [31:0] mem_addr,
     output logic [31:0] mem_wdata,
     output logic [3:0] mem_wstrb,
-    input logic [31:0] mem_rdata
+    input logic [31:0] mem_rdata,
+
+    output logic [31:0] peek
 );
+
+    assign peek = pc_reg;
+    // assign peek = 0 - imm;
+
     //-------------------------------------
     // デバッグ用モニタ
     //-------------------------------------
