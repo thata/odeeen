@@ -115,20 +115,6 @@ module cpu(
         .imm(imm)
     );
 
-    always_ff @(posedge clk) begin
-        if (!reset_n) begin
-            stage_reg <= IF_STAGE;
-            pc_reg <= 0;
-            instr_reg <= 32'h00000000;
-            mem_rdata_reg <= 32'h00000000;
-        end else begin
-            stage_reg <= stage_next;
-            pc_reg <= pc_next;
-            instr_reg <= instr_next;
-            mem_rdata_reg <= mem_rdata_next;
-        end
-    end
-
     //-------------------------------------
     // ALU
     //-------------------------------------
@@ -174,6 +160,21 @@ module cpu(
         .readData2(rf_read_data2)
     );
 
+
+    always_ff @(posedge clk) begin
+        if (!reset_n) begin
+            stage_reg <= IF_STAGE;
+            pc_reg <= 0;
+            instr_reg <= 32'h00000000;
+            mem_rdata_reg <= 32'h00000000;
+        end else begin
+            stage_reg <= stage_next;
+            pc_reg <= pc_next;
+            instr_reg <= instr_next;
+            mem_rdata_reg <= mem_rdata_next;
+        end
+    end
+
     always_comb begin
         // デフォルト値
         stage_next = stage_reg;
@@ -195,8 +196,8 @@ module cpu(
             // 実行
             EX_STAGE: begin
                 // メモリアクセスが不要な場合は、MEM_STAGE を飛ばして WB_STAGE へ遷移する
-                stage_next = (dc_mem_write)  ? MEM_STAGE :
-                             (dc_mem_to_reg) ? MEM_STAGE
+                stage_next = (dc_mem_write)  ? MEM_STAGE : // sw の場合
+                             (dc_mem_to_reg) ? MEM_STAGE   // lw の場合
                                              : WB_STAGE;
             end
             // メモリアクセス

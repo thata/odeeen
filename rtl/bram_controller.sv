@@ -44,26 +44,28 @@ module bram_controller(
         mem[3] = addi(13, 0, 4);
         mem[4] = addi(14, 0, 8);
         mem[5] = addi(15, 0, 16);
-        // LED へ 1 から 10 までの合計をループで計算する
+
+        //----------------------------------------
+        // 1 から 10 までの合計を LED 出力するプログラム
+        //----------------------------------------
         mem[6] = sw(10, 11, 0);    // LED に 1 を点灯
         mem[7] = addi(1, 0, 0);    // sum = 0
         mem[8] = addi(2, 0, 10);   // n = 10
         // loop:
         mem[9] = sw(10, 12, 0);    // LED に 2 を点灯
-        mem[10] = beq(2, 0, 8);     // if (n == 0) break
-        mem[11] = add(1, 1, 2);     // sum = sum + n
-        mem[12] = addi(2, 2, -1);   // n = n - 1
-        mem[13] = jal(0, -8);    // jump loop
-        // mem[13] = beq(0, 0, -8);
+        mem[10] = beq(2, 0, 8);    // if (n == 0) break
+        mem[11] = add(1, 1, 2);    // sum = sum + n
+        mem[12] = addi(2, 2, -1);  // n = n - 1
+        mem[13] = jal(0, -8);      // jump loop
         // break:
-        mem[14] = sw(10, 13, 0);    // LED に 3 を点灯
-        mem[15] = sw(10, 1, 0);     // M[x2+0] = x1
-        mem[16] = add(0, 0, 0);     // nop
-        mem[17] = jal(0, 0);        // jal x0, 0 (無限ループ）
+        mem[14] = sw(10, 13, 0);   // LED に 3 を点灯
+        mem[15] = sw(10, 1, 0);    // M[x2+0] = x1
+        mem[16] = add(0, 0, 0);    // nop
+        mem[17] = jal(0, 0);       // jal x0, 0 (無限ループ）
 
         // デバッグ
-        // mem[20] = jal(0, 0);     // 無限ループ
-        // mem[24] = jal(0, 0);     // 無限ループ
+        // mem[20] = jal(0, 0);    // 無限ループ
+        // mem[24] = jal(0, 0);    // 無限ループ
     end
 
     always_ff @(posedge clk) begin
