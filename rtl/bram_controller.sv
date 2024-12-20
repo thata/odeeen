@@ -6,9 +6,6 @@
 module bram_controller(
     input wire clk,
     input wire reset_n,
-
-    // TODO: あとで cs (chip select) を追加したい
-
     input wire mem_valid,
     output logic mem_ready,
     input wire [31:0] mem_addr,
@@ -32,30 +29,19 @@ module bram_controller(
         // $monitor("%t: state = %d, reset_n = %b, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h", $time, state_reg, reset_n, mem_valid, mem_ready, mem_addr, mem_wdata, mem_wstrb, mem_rdata);
     end
 
-    logic [31:0] mem [0:1023];
+    // 0x0000 ~ 0x1FFF の 8KB の BRAM を用意
+    // 1ワード = 32bit = 4byte なので、メモリの深さは 2048 となる
+    logic [31:0] mem [0:2047];
 
     assign mem_ready = (state_reg == STATE_SEND_READY) ? 1'b1 : 1'b0;
 
     // メモリの初期化
     initial begin
-        mem[0] = add(0, 0, 0); // nop
-        mem[1] = add(0, 0, 0); // nop
-        mem[2] = add(0, 0, 0); // nop
-        mem[3] = add(0, 0, 0); // nop
-        mem[4] = jal(0, 0); // jal x0, 0 (無限ループ）
-
-        // mem[0] = 32'b0101;
-        // mem[1] = 32'b1010;
-        // for (int i = 0; i < 1024; i++) begin
-        //     // 以下のような感じにメモリを初期化
-        //     //   mem[0x0000] = 0x0000
-        //     //   mem[0x0004] = 0x0001
-        //     //   mem[0x0008] = 0x0002
-        //     //   mem[0x000C] = 0x0003
-        //     //   mem[0x0010] = 0x0004
-        //     //   ...
-        //     // mem[i] = i;
-        // end
+        // LED へ 0b1001_1001 を表示する
+        mem[0] = addi(1, 0, 8'b10011001);    // x1 = 0b10011001
+        mem[1] = lui(2, 32'hf0001000 >> 12); // x2 = 0xf0001000
+        mem[2] = sw(2, 1, 0);                // M[x2+0] = x1
+        mem[3] = jal(0, 0);                  // jal x0, 0 (無限ループ）
     end
 
     always_ff @(posedge clk) begin
