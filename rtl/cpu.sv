@@ -1,3 +1,7 @@
+`ifndef __INSTRUCTIONS__
+`include "instructions.sv"
+`endif
+
 module cpu(
     input logic clk,
     input logic reset_n,
@@ -14,8 +18,10 @@ module cpu(
     output logic [31:0] peek
 );
 
+    // デバッグ用の信号線
+    // 今は PC の値を出力しているが、必要に応じて変更して良い
     assign peek = pc_reg;
-    // assign peek = 0 - imm;
+
 
     //-------------------------------------
     // デバッグ用モニタ
@@ -61,10 +67,10 @@ module cpu(
     //-------------------------------------
     // 出力信号
     //-------------------------------------
-    assign mem_valid = (stage_reg == IF_STAGE | stage_reg == MEM_STAGE) ? 1'b1 : 1'b0; // メモリの読み書きを行う場合、アドレスを指定すると共に VALID 信号をアサート
-    assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0; // 今回はこの信号を使わないけど、念のため実装しておく
-    assign mem_addr = (stage_reg == IF_STAGE) ? pc_reg :       // 命令フェッチの場合
-                      (stage_reg == MEM_STAGE) ? alu_result    // lw または sw の場合
+    assign mem_valid = (stage_reg == IF_STAGE || stage_reg == MEM_STAGE) ? 1'b1 : 1'b0; // メモリの読み書きを行う場合、アドレスを指定すると共に VALID 信号をアサート
+    assign mem_instr = (stage_reg == IF_STAGE) ? 1'b1 : 1'b0;   // 今回はこの信号を使わないけど、念のため実装しておく
+    assign mem_addr = (stage_reg == IF_STAGE)  ? pc_reg :       // 命令フェッチの場合
+                      (stage_reg == MEM_STAGE) ? alu_result     // lw または sw の場合
                                                : 32'h00000000;
     assign mem_wdata = (stage_reg == MEM_STAGE && dc_mem_write) ? rf_read_data2 // sw の場合
                                                                 : 32'h00000000;
@@ -188,7 +194,10 @@ module cpu(
             end
             // 実行
             EX_STAGE: begin
-                stage_next = MEM_STAGE;
+                // メモリアクセスが不要な場合は、MEM_STAGE を飛ばして WB_STAGE へ遷移する
+                stage_next = (dc_mem_write)  ? MEM_STAGE :
+                             (dc_mem_to_reg) ? MEM_STAGE
+                                             : WB_STAGE;
             end
             // メモリアクセス
             MEM_STAGE: begin
@@ -202,19 +211,10 @@ module cpu(
             end
             // レジスタ書き戻し
             WB_STAGE: begin
-                if (jump) begin
-                    pc_next = (jump_reg) ? rf_read_data1 + imm // jalr の場合
-                                         : pc_reg + imm;        // jal の場合
-                end else if (branch) begin
-                    // beq 命令の場合
-                    pc_next = (alu_zero) ?
-                        pc_reg + imm : // rs1 == rs2 の場合
-                        pc_reg + 4;
-                end else begin
-                    // それ以外の場合は次の命令へ
-                    pc_next = pc_reg + 4;
-                end
-
+                pc_next = (branch && alu_zero) ? pc_reg + imm :
+                            (jump_reg)         ? alu_result & 32'hfffffffe :
+                            (jump)             ? pc_reg + imm
+                                               : pc_reg + 4;
                 stage_next = IF_STAGE;
             end
             ERR_STAGE: begin

@@ -33,7 +33,7 @@ module ulx3s_top(
     bram_controller bram_ctl (
         .clk(clk),
         .reset_n(reset_n),
-        .mem_valid(bram_en & mem_valid),
+        .mem_valid(bram_en && mem_valid),
         .mem_ready(bram_mem_ready),
         .mem_addr(mem_addr),
         .mem_wdata(mem_wdata),
@@ -49,7 +49,7 @@ module ulx3s_top(
     led_controller led_ctl (
         .clk(clk),
         .reset_n(reset_n),
-        .mem_valid(led_ctl_en & mem_valid),
+        .mem_valid(led_ctl_en && mem_valid),
         .mem_ready(led_ctl_mem_ready),
         .mem_addr(mem_addr),
         .mem_wdata(mem_wdata),
@@ -83,6 +83,7 @@ module ulx3s_top(
     //------------------------------------------------------------------
     assign clk = clk_25mhz;
     assign reset_n = btn[0]; // btn[0] は押すとデアサートされる
+
     assign led = led_ctl_mem_rdata[7:0];
     // assign led = peek[7:0];
 

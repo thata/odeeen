@@ -53,8 +53,8 @@ module bram_controller(
         mem[10] = beq(2, 0, 8);     // if (n == 0) break
         mem[11] = add(1, 1, 2);     // sum = sum + n
         mem[12] = addi(2, 2, -1);   // n = n - 1
-        // mem[13] = jal(0, -6);    // jump loop
-        mem[13] = beq(0, 0, -8);
+        mem[13] = jal(0, -8);    // jump loop
+        // mem[13] = beq(0, 0, -8);
         // break:
         mem[14] = sw(10, 13, 0);    // LED に 3 を点灯
         mem[15] = sw(10, 1, 0);     // M[x2+0] = x1
@@ -62,18 +62,8 @@ module bram_controller(
         mem[17] = jal(0, 0);        // jal x0, 0 (無限ループ）
 
         // デバッグ
-        // mem[7] = 28 = 16 + 8 + 4
-        mem[16] = jal(0, 0);     // 無限ループ
-
-
-        // LED へ 0b1001_1001 を表示する
-        // mem[0] = addi(1, 0, 8'b10011001);    // x1 = 0b10011001
-        // mem[1] = lui(2, 32'hf0001000 >> 12); // x2 = 0xf0001000
-        // mem[2] = sw(2, 1, 0);                // M[x2+0] = x1
-        // mem[3] = add(0, 0, 0);               // nop
-        // mem[4] = add(0, 0, 0);               // nop
-        // mem[5] = jal(0, -10);                  // jal x0, 0 (無限ループ）
-        // mem[50] = jal(0, 0);
+        // mem[20] = jal(0, 0);     // 無限ループ
+        // mem[24] = jal(0, 0);     // 無限ループ
     end
 
     always_ff @(posedge clk) begin
