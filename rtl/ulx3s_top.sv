@@ -4,7 +4,9 @@
 module ulx3s_top(
     input wire clk_25mhz,
     input wire [6:0] btn,
-    output wire [7:0] led
+    output wire [7:0] led,
+    output wire ftdi_rxd, // FPGA transmits to ftdi
+    input wire ftdi_txd   // FPGA receives from ftdi
 );
 
     //------------------------------------------------------------------
@@ -68,6 +70,95 @@ module ulx3s_top(
 
 
     //------------------------------------------------------------------
+    // UART コントローラ
+    //------------------------------------------------------------------
+
+    uart uart_inst (
+        .clk(clk),
+        .rst(1'b0),
+        .rx(ftdi_txd),
+        .tx(ftdi_rxd),
+        .transmit(tx_trigger),
+        .tx_byte(tx_byte),
+        .received(received),
+        .rx_byte(rx_byte),
+        .is_receiving(is_receiving),
+        .is_transmitting(is_transmitting),
+        .recv_error(recv_error)
+    );
+
+    // UART コア用の信号線
+    logic tx_trigger;       // Signal to start transmission
+    logic [7:0] tx_byte;    // Byte to transmit
+    logic received;         // Signal indicating a byte is received
+    logic [7:0] rx_byte;    // Received byte
+    logic is_receiving;     // Indicates receiving state
+    logic is_transmitting;  // Indicates transmitting state
+    logic recv_error;       // Indicates receive error
+
+    // TODO: 送信する文字は固定。あとで直す
+    assign tx_byte = 8'd65; // 'A'
+
+    // UART と CPU との通信用の信号線
+    logic uart_data_mem_ready;
+    logic [31:0] uart_data_mem_rdata;
+    logic uart_ctl_mem_ready;
+    logic [31:0] uart_ctl_mem_rdata;
+
+    assign uart_data_mem_valid = uart_data_en && mem_valid;
+    assign uart_ctl_mem_valid = uart_ctl_en && mem_valid;
+    // TODO: 今は送信にのみ対応。あとで受診にも対応する
+    assign uart_data_mem_ready = (tx_state_reg === TX_STATE_FINISH) ? 1'b1 : 1'b0;
+
+
+    // UART トランスミッタのステート
+    //  001: 待機
+    //  010: 送信開始
+    //  100: 送信中
+    typedef enum logic [2:0] {
+        TX_STATE_IDLE = 3'b001,
+        TX_STATE_START = 3'b010,
+        TX_STATE_FINISH = 3'b100
+    } tx_state_t;
+
+    tx_state_t tx_state_reg, tx_state_next;
+
+    always_ff @(posedge clk) begin
+        if (!reset_n) begin
+            tx_state_reg <= TX_STATE_IDLE;
+        end else begin
+            tx_state_reg <= tx_state_next;
+        end
+    end
+
+    always_comb begin
+        tx_trigger = 1'b0;
+
+        case (tx_state_reg)
+            TX_STATE_IDLE: begin
+                if (uart_data_mem_valid && mem_wstrb === 4'b1111) begin
+                    // 送信の場合
+                    tx_state_next = TX_STATE_START;
+                end else begin
+                    tx_state_next = TX_STATE_IDLE;
+                end
+            end
+            TX_STATE_START: begin
+                tx_trigger = 1'b1;
+
+                tx_state_next = TX_STATE_FINISH;
+            end
+            TX_STATE_FINISH: begin
+                tx_state_next = TX_STATE_IDLE;
+            end
+            default: begin
+                tx_state_next = TX_STATE_IDLE;
+            end
+        endcase
+    end
+
+
+    //------------------------------------------------------------------
     // 周辺機器との接続
     //------------------------------------------------------------------
 
@@ -78,10 +169,17 @@ module ulx3s_top(
     assign led_ctl_en = (mem_addr == 32'hf0001000) ? 1'b1 : 1'b0;
 
     // 周辺機器 => CPU
-    assign mem_ready = (bram_en) ? bram_mem_ready :
-                       (led_ctl_en) ? led_ctl_mem_ready : 1'b0;
-    assign mem_rdata = (bram_en) ? bram_mem_rdata :
-                       (led_ctl_en) ? led_ctl_mem_rdata : 32'h0;
+    assign mem_ready = (bram_en)      ? bram_mem_ready :
+                       (led_ctl_en)   ? led_ctl_mem_ready :
+                       (uart_data_en) ? uart_data_mem_ready :
+                       (uart_ctl_en)  ? uart_ctl_mem_ready
+                                      : 1'b1; // 接続先のペリフェラルが存在しない場合は常に ready = 1 とする
+
+    assign mem_rdata = (bram_en)      ? bram_mem_rdata :
+                       (led_ctl_en)   ? led_ctl_mem_rdata :
+                       (uart_data_en) ? uart_data_mem_rdata :
+                       (uart_ctl_en)  ? uart_ctl_mem_rdata
+                                      : 32'h0;
 
 
     //------------------------------------------------------------------
@@ -92,6 +190,7 @@ module ulx3s_top(
 
     assign led = led_ctl_mem_rdata[7:0];
     // assign led = peek[7:0];
+    // assign led = { uart_data_en, tx_trigger, uart_data_mem_valid, 2'b0, tx_state_reg };
 
 endmodule
 
