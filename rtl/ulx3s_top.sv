@@ -108,6 +108,14 @@ module ulx3s_top(
 
     assign tx_byte = mem_wdata[7:0];                 // 送信データ
     assign uart_data_mem_rdata = { 24'h0, rx_byte }; // 受信データ
+    // TODO: is_transmittiong は後で実装する
+    assign uart_ctl_mem_rdata = { 6'b0, 1'b0, temp }; // { 000000, 送信中, 受信完了 }
+    // assign uart_ctl_mem_rdata = { 1'b1, 5'b0, is_transmitting, temp }; // { 000000, 送信中, 受信完了 }
+
+    // received 信号の動きを確認したい
+    logic temp;
+    logic temp_next;
+    assign temp_next = (received) ? 1'b1 : temp;
 
     // UART トランスミッタのステート
     //  001: 待機
@@ -124,8 +132,15 @@ module ulx3s_top(
     always_ff @(posedge clk) begin
         if (!reset_n) begin
             tx_state_reg <= TX_STATE_IDLE;
+
+            temp <= 1'b0;
         end else begin
             tx_state_reg <= tx_state_next;
+
+            if (uart_data_mem_valid && mem_wstrb === 4'b0000)
+                temp <= 1'b0;
+            else
+                temp <= temp_next;
         end
     end
 
@@ -192,7 +207,7 @@ module ulx3s_top(
 
     assign led = led_ctl_mem_rdata[7:0];
     // assign led = peek[7:0];
-    // assign led = { uart_data_en, tx_trigger, uart_data_mem_valid, 2'b0, tx_state_reg };
+    // assign led = uart_ctl_mem_rdata;
 
 endmodule
 
