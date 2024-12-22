@@ -106,16 +106,14 @@ module ulx3s_top(
     assign uart_ctl_mem_valid = uart_ctl_en && mem_valid;
     assign uart_data_mem_ready = (tx_state_reg === TX_STATE_FINISH) ? 1'b1 : 1'b0;
 
+    // 送受信データ置き場
     assign tx_byte = mem_wdata[7:0];                 // 送信データ
     assign uart_data_mem_rdata = { 24'h0, rx_byte }; // 受信データ
-    // TODO: is_transmittiong は後で実装する
-    assign uart_ctl_mem_rdata = { 6'b0, 1'b0, temp }; // { 000000, 送信中, 受信完了 }
-    // assign uart_ctl_mem_rdata = { 1'b1, 5'b0, is_transmitting, temp }; // { 000000, 送信中, 受信完了 }
+    assign uart_ctl_mem_rdata = { 6'b0, is_transmitting, unread_reg }; // { 000000, 送信中, 未読有無 }
 
-    // received 信号の動きを確認したい
-    logic temp;
-    logic temp_next;
-    assign temp_next = (received) ? 1'b1 : temp;
+    // 未読データの有無
+    logic unread_reg, unread_next;
+    assign unread_next = (received) ? 1'b1 : unread_reg;
 
     // UART トランスミッタのステート
     //  001: 待機
@@ -133,14 +131,14 @@ module ulx3s_top(
         if (!reset_n) begin
             tx_state_reg <= TX_STATE_IDLE;
 
-            temp <= 1'b0;
+            unread_reg <= 1'b0;
         end else begin
             tx_state_reg <= tx_state_next;
 
             if (uart_data_mem_valid && mem_wstrb === 4'b0000)
-                temp <= 1'b0;
+                unread_reg <= 1'b0;
             else
-                temp <= temp_next;
+                unread_reg <= unread_next;
         end
     end
 
