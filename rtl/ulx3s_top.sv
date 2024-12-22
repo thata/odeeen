@@ -96,9 +96,6 @@ module ulx3s_top(
     logic is_transmitting;  // Indicates transmitting state
     logic recv_error;       // Indicates receive error
 
-    // TODO: 送信する文字は固定。あとで直す
-    assign tx_byte = 8'd65; // 'A'
-
     // UART と CPU との通信用の信号線
     logic uart_data_mem_ready;
     logic [31:0] uart_data_mem_rdata;
@@ -107,9 +104,10 @@ module ulx3s_top(
 
     assign uart_data_mem_valid = uart_data_en && mem_valid;
     assign uart_ctl_mem_valid = uart_ctl_en && mem_valid;
-    // TODO: 今は送信にのみ対応。あとで受診にも対応する
     assign uart_data_mem_ready = (tx_state_reg === TX_STATE_FINISH) ? 1'b1 : 1'b0;
 
+    assign tx_byte = mem_wdata[7:0];                 // 送信データ
+    assign uart_data_mem_rdata = { 24'h0, rx_byte }; // 受信データ
 
     // UART トランスミッタのステート
     //  001: 待機
@@ -139,6 +137,10 @@ module ulx3s_top(
                 if (uart_data_mem_valid && mem_wstrb === 4'b1111) begin
                     // 送信の場合
                     tx_state_next = TX_STATE_START;
+                end else if (uart_data_mem_valid && mem_wstrb === 4'b0000) begin
+                    // 受信の場合
+                    // ready だけ返せばいいので、直接 TX_STATE_FINISH に遷移
+                    tx_state_next = TX_STATE_FINISH;
                 end else begin
                     tx_state_next = TX_STATE_IDLE;
                 end
