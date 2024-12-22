@@ -37,6 +37,16 @@ module bram_controller(
 
     // メモリの初期化
     initial begin
+        // レジスタの使い方
+        //  x1: return address
+        //  x3: Global Pointer
+        //  x5: t0
+        //  x6: t1
+        //  x7: t2
+        //  x9: s1 (== 1)
+        //  x10: a0 / return value
+        //  x11: a1
+
         // デバッグ用の各種変数
         mem[0] = lui(10, 32'hf0001000 >> 12); // x10 = 0xf0001000
         mem[1] = addi(11, 0, 1);
