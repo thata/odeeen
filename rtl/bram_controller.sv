@@ -36,7 +36,8 @@ module bram_controller(
     assign mem_ready = (state_reg == STATE_SEND_READY) ? 1'b1 : 1'b0;
 
     initial begin
-        $readmemh("firmware/firmware.hex", mem);
+        // NOTE: ビルド時はダミーデータを書き込んでおき、後からダミーデータとファームウェアの置き換えを行う
+        $readmemh("firmware/firmware_seed.hex", mem);
     end
 
     always_ff @(posedge clk) begin
