@@ -3,5 +3,6 @@ a.out
 odeeen.json
 ulx3s.bit
 ulx3s_out.config
+firmware/*.o
 firmware/firmware.elf
 firmware/firmware.hex
