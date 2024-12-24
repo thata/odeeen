@@ -5,9 +5,34 @@ module ulx3s_top(
     input wire clk_25mhz,
     input wire [6:0] btn,
     output wire [7:0] led,
+    // UART
     output wire ftdi_rxd, // FPGA transmits to ftdi
-    input wire ftdi_txd   // FPGA receives from ftdi
+    input wire ftdi_txd,  // FPGA receives from ftdi
+    // SDRAM
+    output [12:0] sdram_a,
+    inout [15:0] sdram_dq,
+    output sdram_cs_n,
+    output sdram_cke,
+    output sdram_ras_n,
+    output sdram_cas_n,
+    output sdram_we_n,
+    output [1:0] sdram_dm,
+    output [1:0] sdram_ba,
+    output sdram_clock
 );
+
+    localparam SYSCLK = 25_000_000;
+
+    //------------------------------------------------------------------
+    // 外部信号線との接続
+    //------------------------------------------------------------------
+    assign clk = clk_25mhz;
+    assign reset_n = btn[0]; // btn[0] は押すとデアサートされる
+
+    assign led = led_ctl_mem_rdata[7:0];
+    // assign led = peek[7:0];
+    // assign led = uart_ctl_mem_rdata;
+
 
     //------------------------------------------------------------------
     // CPU
@@ -174,38 +199,65 @@ module ulx3s_top(
 
 
     //------------------------------------------------------------------
+    // SDRAM コントローラ
+    //------------------------------------------------------------------
+
+	sdram #(
+		.SDRAM_CLK_FREQ(SYSCLK / 1_000_000)
+    ) sdram_inst (
+		.clk(clk),
+		.resetn(reset_n),
+		.addr(sdram_mem_addr),
+		.din(mem_wdata),
+		.dout(sdram_mem_rdata),
+		.wmask(mem_wstrb),
+		.ready(sdram_mem_ready),
+		.sdram_clk(sdram_clock),
+		.sdram_cke(sdram_cke),
+		.sdram_csn(sdram_cs_n),
+		.sdram_rasn(sdram_ras_n),
+		.sdram_casn(sdram_cas_n),
+		.sdram_wen(sdram_we_n),
+		.sdram_addr(sdram_a),
+		.sdram_ba(sdram_ba),
+		.sdram_dq(sdram_dq),
+		.sdram_dqm(sdram_dm),
+		.valid(sdram_valid)
+	);
+
+    logic sdram_valid;
+    logic sdram_mem_ready;
+    logic [31:0] sdram_mem_rdata;
+    logic [24:0] sdram_mem_addr;
+
+    assign sdram_mem_addr = { (mem_addr & 32'h0fff_ffff) >> 2, 2'b00 };
+    assign sdram_valid = sdram_en && mem_valid;
+
+    //------------------------------------------------------------------
     // 周辺機器との接続
     //------------------------------------------------------------------
 
     // メモリマップ
     assign bram_en = (mem_addr < 8192) ? 1'b1 : 1'b0;
+    assign sdram_en = ((mem_addr & 32'hf000_0000) == 32'h4000_0000) ? 1'b1 : 1'b0;
     assign uart_data_en = (mem_addr == 32'hf0000000) ? 1'b1 : 1'b0;
     assign uart_ctl_en = (mem_addr == 32'hf0000004) ? 1'b1 : 1'b0;
     assign led_ctl_en = (mem_addr == 32'hf0001000) ? 1'b1 : 1'b0;
 
     // 周辺機器 => CPU
     assign mem_ready = (bram_en)      ? bram_mem_ready :
+                       (sdram_en)     ? sdram_mem_ready :
                        (led_ctl_en)   ? led_ctl_mem_ready :
                        (uart_data_en) ? uart_data_mem_ready :
                        (uart_ctl_en)  ? uart_ctl_mem_ready
                                       : 1'b1; // 接続先のペリフェラルが存在しない場合は常に ready = 1 とする
 
     assign mem_rdata = (bram_en)      ? bram_mem_rdata :
+                       (sdram_en)     ? sdram_mem_rdata :
                        (led_ctl_en)   ? led_ctl_mem_rdata :
                        (uart_data_en) ? uart_data_mem_rdata :
                        (uart_ctl_en)  ? uart_ctl_mem_rdata
                                       : 32'h0;
-
-
-    //------------------------------------------------------------------
-    // 外部信号線との接続
-    //------------------------------------------------------------------
-    assign clk = clk_25mhz;
-    assign reset_n = btn[0]; // btn[0] は押すとデアサートされる
-
-    assign led = led_ctl_mem_rdata[7:0];
-    // assign led = peek[7:0];
-    // assign led = uart_ctl_mem_rdata;
 
 endmodule
 
