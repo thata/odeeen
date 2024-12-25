@@ -29,9 +29,11 @@ module bram_controller(
         // $monitor("%t: state = %d, reset_n = %b, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h", $time, state_reg, reset_n, mem_valid, mem_ready, mem_addr, mem_wdata, mem_wstrb, mem_rdata);
     end
 
-    // 0x0000 ~ 0x1FFF の 8KB の BRAM を用意
-    // 1ワード = 32bit = 4byte なので、メモリの深さは 2048 となる
-    logic [31:0] mem [0:2047];
+    // 0x00000 ~ 0x3FFFF の 256KB の BRAM を用意
+    logic [31:0] mem [0:65535]; // 256KB（~ 0x3FFFF）
+    // logic [31:0] mem [0:131071]; // 512KB (~ 0x7FFFF)
+    // logic [31:0] mem [0:32767]; // 128KB（~ 0x1FFFF）
+    // logic [31:0] mem [0:16383]; // 64KB（~ 0x0FFFF）
 
     assign mem_ready = (state_reg == STATE_SEND_READY) ? 1'b1 : 1'b0;
 

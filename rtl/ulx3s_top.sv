@@ -237,8 +237,11 @@ module ulx3s_top(
     // 周辺機器との接続
     //------------------------------------------------------------------
 
-    // メモリマップ
-    assign bram_en = (mem_addr < 8192) ? 1'b1 : 1'b0;
+    // アクセスしたアドレスに応じた周辺機器を有効にする
+    assign bram_en = (mem_addr < 262144) ? 1'b1 : 1'b0; // 0x0000_0000 ~ 0x0003_FFFF (256KB)
+    // assign bram_en = (mem_addr < 524288) ? 1'b1 : 1'b0; // 0x0000_0000 ~ 0x0007_FFFF（512KB）
+    // assign bram_en = (mem_addr < 131072) ? 1'b1 : 1'b0; // 0x0000_0000 ~ 0x0001_FFFF（128KB）
+    // assign bram_en = (mem_addr < 65536) ? 1'b1 : 1'b0;  // 0x0000_0000 ~ 0x0000_FFFF（64KB）
     assign sdram_en = ((mem_addr & 32'hf000_0000) == 32'h4000_0000) ? 1'b1 : 1'b0;
     assign uart_data_en = (mem_addr == 32'hf0000000) ? 1'b1 : 1'b0;
     assign uart_ctl_en = (mem_addr == 32'hf0000004) ? 1'b1 : 1'b0;

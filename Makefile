@@ -41,4 +41,4 @@ firmware: firmware/firmware.hex
 
 # ファームウェア置き換え用のダミーデータを生成
 firmware/firmware_seed.hex:
-	ecpbram -g firmware/firmware_seed.hex -w 32 -d 2048
+	ecpbram -g firmware/firmware_seed.hex -w 32 -d 65536
