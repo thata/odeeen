@@ -195,10 +195,16 @@ module cpu(
             end
             // 実行
             EX_STAGE: begin
-                // メモリアクセスが不要な場合は、MEM_STAGE を飛ばして WB_STAGE へ遷移する
-                stage_next = (dc_mem_write)  ? MEM_STAGE : // sw の場合
-                             (dc_mem_to_reg) ? MEM_STAGE   // lw の場合
-                                             : WB_STAGE;
+                if (dc_mem_write) begin
+                    // sw の場合
+                    stage_next = MEM_STAGE;
+                end else if (dc_mem_to_reg) begin
+                    // lw の場合
+                    stage_next = MEM_STAGE;
+                end else begin
+                    // メモリアクセスが不要な場合は、MEM_STAGE を飛ばして WB_STAGE へ遷移する
+                    stage_next = WB_STAGE;
+                end
             end
             // メモリアクセス
             MEM_STAGE: begin
