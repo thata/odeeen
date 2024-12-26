@@ -3,6 +3,7 @@
 `endif
 
 // CPUのテストベンチ
+//  iverilog -g 2012 -s cpu_test rtl/instructions.sv rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
 module cpu_test;
 
     // CPUのインスタンス
@@ -74,36 +75,13 @@ module cpu_test;
          * プログラムの書き込み
          */
 
-        // lw と sw のテスト
-        instructions[0] = addi(1, 0, 10);    // addi x1, x0, 10
-        instructions[1] = add(2, 1, 1);      // addi x2, x1, x1
-        instructions[2] = add(3, 1, 2);      // addi x3, x1, x2
-        instructions[3] = sw(0, 3, 32'h80);  // sw x3, 0x80(x0) （メモリの 0x80 番地へ x3 の値を格納する）
-        instructions[4] = lw(4, 0, 32'h80);  // lw x4, 0x80(x0) （メモリの 0x80 番地から x4 へ読み込む）
-        instructions[5] = sw(0, 4, 32'h84);  // sw x4, 0x84(x0) （メモリの 0x84 番地へ x4 の値を格納する）
         // beq のテスト
-        instructions[6] = addi(5, 0, 42);    // x5 = x0 + 42
-        instructions[7] = addi(6, 0, 42);    // x6 = x0 + 42
-        instructions[8] = beq(5, 6, 8 >> 1); // if (x5 == x6) 2つ先の命令(8バイト)へジャンプ
-        instructions[9] = jal(0, 0);         // 無限ループ
-        instructions[10] = sw(0, 5, 32'h88); // sw x5, 0x88(x0) （メモリの 0x88 番地へ x5 の値を格納する）
-        // lui と ori のテスト
-        instructions[11] = lui(7, 32'h12345000 >> 12); // x7 = 0x12345000
-        instructions[12] = sw(0, 7, 32'h8C);           // M[0x8C] = x7
-        instructions[13] = ori(7, 7, 32'h0678);        // x7 = x7 | 0x678
-        instructions[14] = sw(0, 7, 32'h90);           // M[0x90] = x7
-        // jal と jalr で関数呼び出し
-        instructions[15] = addi(10, 0, 100);   // x10 = 100
-        instructions[16] = jal(1, 12 >> 1);    // jal x1, 12 （double 関数を呼び出す）
-        instructions[17] = sw(0, 10, 32'h94);  // M[0x94] = x10
-        // 無限ループ
-        instructions[18] = jal(0, 0);
-        // double 関数
-        // x10 に渡した値を二倍にして x10 へ入れて返す関数
-        instructions[19] = addi(5, 10, 0); // x5 = x10
-        instructions[20] = add(10, 5, 5); // x10 = x5 + x5
-        instructions[21] = jalr(0, 1, 0); // jalr x0, x1, 0
-
+        instructions[0] = addi(5, 0, 42);     // x5 = x0 + 42
+        instructions[1] = addi(6, 0, 42);     // x6 = x0 + 42
+        instructions[2] = beq(5, 6, 8 >> 1);  // if (x5 == x6) 2つ先の命令(8バイト)へジャンプ
+        instructions[3] = jal(0, 0);          // 無限ループ
+        instructions[4] = sw(0, 5, 32'h3000); // sw x5, 0x88(x0) （メモリの 0x88 番地へ x5 の値を格納する）
+        instructions[5] = jal(0, 0);          // 無限ループ
 
         mem_monitor_on = 1;
         addr = 32'h00000000;
@@ -122,7 +100,7 @@ module cpu_test;
         end
         mem_monitor_on = 0;
 
-        $monitoron; // $monitor を再開
+        // $monitoron; // $monitor を再開
 
         /**
          * リセットして、0番地からプログラムを実行
@@ -141,62 +119,9 @@ module cpu_test;
         mem_monitor_wstrb_reg = 4'b0000;
         #10;
         wait(mem_ready);
-        $display("mem[0x80] = %d", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリの 0x84 番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000084;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x84] = %d", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリの 0x88 番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000088;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x88] = %d", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリの 0x8C 番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h0000008C;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x8C] = %h", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリの 0x90 番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000090;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x90] = %h", mem_rdata);
-        mem_monitor_valid_reg = 0;
-        #10;
-
-        // メモリの 0x94 番地の内容を確認
-        mem_monitor_on = 1;
-        mem_monitor_valid_reg = 1;
-        mem_monitor_addr_reg = 32'h00000094;
-        mem_monitor_wstrb_reg = 4'b0000;
-        #10;
-        wait(mem_ready);
-        $display("mem[0x94] = %d", mem_rdata);
+        assert(
+            mem_rdata === 42
+        ) $display("PASSED"); else $display("expected 42 but actual %d", mem_rdata);
         mem_monitor_valid_reg = 0;
         #10;
 

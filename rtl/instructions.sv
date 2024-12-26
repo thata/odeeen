@@ -186,6 +186,24 @@ function [31:0] beq(
     };
 endfunction
 
+// bne rs1, rs2, imm
+function [31:0] bne(
+    input logic [4:0] rs1,
+    input logic [4:0] rs2,
+    input logic [11:0] imm
+);
+    bne = {
+        imm[11],
+        imm[9:4],
+        rs2,
+        rs1,
+        3'b001, // funct3
+        imm[3:0],
+        imm[10],
+        7'b1100011 // opCode
+    };
+endfunction
+
 // jal rd, offset
 function [31:0] jal(
     input logic [4:0] rd,

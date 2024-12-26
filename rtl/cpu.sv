@@ -28,19 +28,19 @@ module cpu(
     //-------------------------------------
     initial begin
         // デバッグ用モニタ
-        $monitor(
-            "%t: pc = %h, stage = %d, instr = %h, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h",
-            $time,
-            pc_reg,
-            stage_reg,
-            instr_reg,
-            mem_valid,
-            mem_ready,
-            mem_addr,
-            mem_wdata,
-            mem_wstrb,
-            mem_rdata
-        );
+        // $monitor(
+        //     "%t: pc = %h, stage = %d, instr = %h, mem_valid = %b, mem_ready = %b, mem_addr = %h, mem_wdata = %h, mem_wstrb = %b, mem_rdata = %h",
+        //     $time,
+        //     pc_reg,
+        //     stage_reg,
+        //     instr_reg,
+        //     mem_valid,
+        //     mem_ready,
+        //     mem_addr,
+        //     mem_wdata,
+        //     mem_wstrb,
+        //     mem_rdata
+        // );
     end
 
     //-------------------------------------
@@ -134,6 +134,21 @@ module cpu(
     );
 
     //-------------------------------------
+    // 条件分岐判定ユニット
+    //-------------------------------------
+    logic branch_result;
+    logic [2:0] branch_funct3;
+
+    assign branch_funct3 = instr_reg[14:12];
+
+    branch_unit branch_unit_inst(
+        .in1(rf_read_data1),
+        .in2(rf_read_data2),
+        .funct3(branch_funct3),
+        .result(branch_result)
+    );
+
+    //-------------------------------------
     // Register File
     //-------------------------------------
     logic rf_we3;
@@ -218,9 +233,9 @@ module cpu(
             end
             // レジスタ書き戻し
             WB_STAGE: begin
-                pc_next = (branch && alu_zero) ? pc_reg + imm :
-                            (jump_reg)         ? alu_result & 32'hfffffffe :
-                            (jump)             ? pc_reg + imm
+                pc_next = (branch && branch_result) ? pc_reg + imm :
+                          (jump_reg)           ? alu_result & 32'hfffffffe :
+                          (jump)               ? pc_reg + imm
                                                : pc_reg + 4;
                 stage_next = IF_STAGE;
             end
@@ -451,6 +466,33 @@ module alu(
     // end
 endmodule
 
+
+// 条件分岐判定ユニット
+//
+// funct3 | operation
+// ------------------
+// 000    | beq (===)
+// 001    | bne (!==)
+// 100    | blt (signed <)
+// 101    | bge (signed >=)
+// 110    | bltu (unsigned <)
+// 111    | bgeu (unsigned >=)
+// ------------------
+module branch_unit(
+    input logic [31:0] in1, in2,
+    input logic [2:0] funct3,
+    output logic result
+);
+    assign result = (funct3 == 3'b000) ? (in1 === in2) : // beq
+                    (funct3 == 3'b001) ? (in1 !== in2) : // bne
+                    (funct3 == 3'b100) ? ($signed(in1) < $signed(in2)) : // blt
+                    (funct3 == 3'b101) ? ($signed(in1) >= $signed(in2)) : // bge
+                    (funct3 == 3'b110) ? (in1 < in2) :   // bltu
+                    (funct3 == 3'b111) ? (in1 >= in2)    // bgeu
+                                       : 1'b0;
+endmodule
+
+
 // Register File
 module regfile(
     input logic clk,
@@ -478,11 +520,11 @@ module regfile(
     end
 
     always @(*) begin
-        $display("x1 %d", registers[1]);
-        $display("x2 %d", registers[2]);
-        $display("x3 %d", registers[3]);
-        $display("x5 %d", registers[5]);
-        $display("x10 %d", registers[10]);
+        // $display("x1 %d", registers[1]);
+        // $display("x2 %d", registers[2]);
+        // $display("x3 %d", registers[3]);
+        // $display("x5 %d", registers[5]);
+        // $display("x10 %d", registers[10]);
         // $display("$2 %b", registers[2]);
         // $display("$30 %b", registers[30]);
         // $display("$31 %b", registers[31]);

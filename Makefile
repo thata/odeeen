@@ -28,10 +28,13 @@ prog: ulx3s.bit
 prog_flash: ulx3s.bit
 	fujprog -j FLASH ulx3s.bit
 
-test:
-	cd rtl && iverilog -g 2012 -s cpu_test cpu_test.sv cpu.sv bram_controller.sv && ./a.out
+unit-test:
+	iverilog -g 2012 -s branch_unit_test rtl/instructions.sv rtl/cpu.sv rtl/branch_unit_test.sv && ./a.out
 
-FIRMWARE_TARGET = mem_test.S
+test:
+	iverilog -g 2012 -s cpu_test rtl/instructions.sv rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
+
+FIRMWARE_TARGET = branch_test.S
 
 firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
