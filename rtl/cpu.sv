@@ -324,7 +324,9 @@ module decoder(
                                              : 2'b10;  // funct
 
     // always @(*) begin
-    //     $display("aluIn2Src %b", aluIn2Src);
+    //     $display("opCode %b", opCode);
+    //     $display("funct7 %b", funct7);
+    //     $display("funct3 %b", funct3);
     //     $display("preAluOp %b", preAluOp);
     //     $display("aluOp %b", aluOp);
     // end
@@ -354,7 +356,16 @@ module alu_controller(
             2'b01: aluOp = 4'b0001; // sub
             2'b11: case(funct3)
                 3'b000: aluOp = 4'b0000; // addi => add
-                3'b110: aluOp = 4'b1000; // ori => or
+                3'b001: aluOp = 4'b0010; // x slli => sll
+                3'b010: aluOp = 4'b0011; // x slti => slt
+                3'b011: aluOp = 4'b0100; // x sltiu => sltu
+                3'b100: aluOp = 4'b0101; // x xori => xor
+                3'b101: aluOp =
+                  (funct7 === 7'h00) ? 4'b0110 : // x srli => srl
+                  (funct7 === 7'h20) ? 4'b0111   // x srai => sra
+                                     : 4'bxxxx;
+                3'b110: aluOp = 4'b1000; // x ori => or
+                3'b111: aluOp = 4'b1001; // x andi => and
                 default: aluOp = 4'bXXXX;
             endcase
             default: case(funct)
@@ -380,12 +391,17 @@ module immgen(
     output logic [31:0] imm
 );
     logic [6:0] opCode;
+    logic [2:0] funct3;
+    logic [4:0] imm5;
     logic [11:0] imm12;
     logic [12:0] imm13;
     logic [19:0] imm20;
     logic [20:0] imm21;
 
     assign opCode = instr[6:0];
+    assign funct3 = instr[14:12];
+
+    assign imm5 = instr[24:20];
 
     assign imm12 = (opCode == 7'b0100011) ? {instr[31:25], instr[11:7]} // S type
                                           : instr[31:20];               // other
@@ -400,9 +416,11 @@ module immgen(
     assign imm20 = instr[31:12];
 
     // sign extend or shift
-    assign imm = (opCode == 7'b0110111) ? {imm20, 12'b0} : // U type (lui)
-                 (opCode == 7'b1100011) ? {{19{imm13[12]}}, imm13} :
-                 (opCode == 7'b1101111) ? {{11{imm21[20]}}, imm21}
+    assign imm = (opCode === 7'b0110111) ? {imm20, 12'b0} : // U type (lui)
+                 (opCode === 7'b1100011) ? {{19{imm13[12]}}, imm13} :
+                 (opCode === 7'b1101111) ? {{11{imm21[20]}}, imm21} :
+                 (opCode === 7'b0010011 && funct3 === 3'h1) ? {{27{imm5[4]}}, imm5} : // slli
+                 (opCode === 7'b0010011 && funct3 === 3'h5) ? {{27{imm5[4]}}, imm5}   // srli, srai
                                         : {{20{imm12[11]}}, imm12};
 
     // always @(imm) begin
@@ -443,16 +461,16 @@ module alu(
     assign sltResult = ($signed(in1) < $signed(in2)) ? 32'b1 : 32'b0;
     assign sltuResult = (in1 < in2) ? 32'b1 : 32'b0;
 
-    assign result = (op == 4'b0000) ? (in1 + in2)  :  // plus
-                    (op == 4'b0001) ? (in1 - in2)  :  // minus
-                    (op == 4'b1001) ? (in1 & in2)  :  // and
-                    (op == 4'b1000) ? (in1 | in2)  :  // or
-                    (op == 4'b0101) ? (in1 ^ in2)  :  // xor
-                    (op == 4'b0010) ? (in1 << in2) :  // sll (shift left logical)
-                    (op == 4'b0110) ? (in1 >> in2) :  // srl (shift right logical)
-                    (op == 4'b0111) ? sraResult    :  // sra (shift right arithmetic)
-                    (op == 4'b0011) ? sltResult    :  // slt
-                    (op == 4'b0100) ? sltuResult      // sltu
+    assign result = (op === 4'b0000) ? (in1 + in2)  :  // plus
+                    (op === 4'b0001) ? (in1 - in2)  :  // minus
+                    (op === 4'b1001) ? (in1 & in2)  :  // and
+                    (op === 4'b1000) ? (in1 | in2)  :  // or
+                    (op === 4'b0101) ? (in1 ^ in2)  :  // xor
+                    (op === 4'b0010) ? (in1 << in2) :  // sll (shift left logical)
+                    (op === 4'b0110) ? (in1 >> in2) :  // srl (shift right logical)
+                    (op === 4'b0111) ? sraResult    :  // sra (shift right arithmetic)
+                    (op === 4'b0011) ? sltResult    :  // slt
+                    (op === 4'b0100) ? sltuResult      // sltu
                                     : 32'hxxxxxxxx;
     assign negative = result[31];
     assign zero = ~|result;
