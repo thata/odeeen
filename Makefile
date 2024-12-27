@@ -34,7 +34,9 @@ unit-test:
 test:
 	iverilog -g 2012 -s cpu_test rtl/instructions.sv rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
 
-FIRMWARE_TARGET = i_type_test.S
+firmware/firmware.hex:
+
+FIRMWARE_TARGET = mem_limit.S
 
 firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
