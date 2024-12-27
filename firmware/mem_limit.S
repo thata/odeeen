@@ -16,7 +16,6 @@ _start:
     lui tp, 0xf0001     // LEDアクセス用 gp
     li s0, 0x40000000   // データ領域開始アドレス（SDRAM）
     li s1, 0x50000000   // データ領域終了アドレス（SDRAM）
-    ; li s1, 0x41000000   // データ領域終了アドレス（SDRAM）
     li s2, 0xDEADBEEF   // テストデータ
     li s3, 0x2          // 書き込み中
     li s4, 0x4          // 読み込み中
