@@ -83,7 +83,7 @@ module cpu(
     //-------------------------------------
     logic dc_mem_write;
     logic dc_reg_write;
-    logic alu_in1_src;
+    logic [1:0] alu_in1_src;
     logic alu_in2_src;
     logic [3:0] alu_op;
     logic dc_mem_to_reg;
@@ -121,7 +121,10 @@ module cpu(
     logic [31:0] alu_in1, alu_in2, alu_result;
     logic alu_negative, alu_zero;
 
-    assign alu_in1 = (alu_in1_src) ? rf_read_data1 : 32'b0;
+    assign alu_in1 = (alu_in1_src === 2'b00) ? 32'b0 :          // lui
+                     (alu_in1_src === 2'b01) ? rf_read_data1 :  // それ以外
+                     (alu_in1_src === 2'b10) ? pc_reg           // auipc
+                                             : 32'b0;
     assign alu_in2 = (alu_in2_src) ? rf_read_data2 : imm;
 
     alu alu_inst(
@@ -252,7 +255,7 @@ module decoder(
     input logic [31:0] instr,
     output logic memWrite,
     output logic regWrite,
-    output logic aluIn1Src,
+    output logic [1:0] aluIn1Src,
     output logic aluIn2Src,
     output logic [3:0] aluOp,
     output logic memToReg,
@@ -282,6 +285,7 @@ module decoder(
                       (opCode === 7'b0010011) ? 1'b1 : // addi, ori
                       (opCode === 7'b0110011) ? 1'b1 : // R type (add)
                       (opCode === 7'b0110111) ? 1'b1 : // lui
+                      (opCode === 7'b0010111) ? 1'b1 : // auipc
                       (opCode === 7'b1101111) ? 1'b1 : // jal
                       (opCode === 7'b1100111) ? 1'b1   // jalr
                                               : 1'b0;
@@ -289,15 +293,17 @@ module decoder(
     // select alu.in1 src
     // 0: 32'b0
     // 1: ds1
-    assign aluIn1Src = (opCode === 7'b0110111) ? 1'b0 // lui
-                                               : 1'b1;
+    // 2: pc
+    assign aluIn1Src = (opCode === 7'b0110111) ? 2'd0 : // lui
+                       (opCode === 7'b0010111) ? 2'd2   // auipc
+                                               : 2'd1;
 
     // select alu.in2 src
     // 0: imm
     // 1: ds2 (B, R type)
     assign aluIn2Src = (opCode === 7'b0110011) ? 1'b1 : // R type
-                    (opCode === 7'b1100011) ? 1'b1   // B type
-                                            : 1'b0;
+                       (opCode === 7'b1100011) ? 1'b1   // B type
+                                               : 1'b0;
 
     // lw
     assign memToReg = (opCode == 7'b0000011) ? 1'b1 : 1'b0;
@@ -320,6 +326,7 @@ module decoder(
                       (opCode == 7'b1101111) ? 2'b00 : // jal => add
                       (opCode == 7'b1100111) ? 2'b00 : // jalr => add
                       (opCode == 7'b0110111) ? 2'b00 : // lui => add
+                      (opCode == 7'b0010111) ? 2'b00 : // auipc => add
                       (opCode == 7'b0010011) ? 2'b11   // addi, ori => funct3
                                              : 2'b10;  // funct
 
@@ -417,6 +424,7 @@ module immgen(
 
     // sign extend or shift
     assign imm = (opCode === 7'b0110111) ? {imm20, 12'b0} : // U type (lui)
+                 (opCode === 7'b0010111) ? {imm20, 12'b0} : // U type (auipc)
                  (opCode === 7'b1100011) ? {{19{imm13[12]}}, imm13} :
                  (opCode === 7'b1101111) ? {{11{imm21[20]}}, imm21} :
                  (opCode === 7'b0010011 && funct3 === 3'h1) ? {{27{imm5[4]}}, imm5} : // slli

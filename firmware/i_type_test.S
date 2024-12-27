@@ -7,6 +7,7 @@
 //  - srai
 //  - slti
 //  - sltiu
+//  - （おまけ）auipc
 
     .text
     .globl _start
@@ -158,9 +159,21 @@ test_start:
     // 0xffffffff < 0 = 0
     li t0, 0xffffffff
     sltiu t2, t0, 0  // actual
-    li t3, 0        // expected
+    li t3, 0         // expected
     bne t2, t3, fail
 
+    //----------------------------------------
+    // auipc
+    //----------------------------------------
+
+    // PCの値(0x128) + 0x12345000 を t0 に格納
+    // NOTE: プログラムを書き換えると、この値も変わるので注意
+    auipc t0, 0x12345  // t0 = pc + 0x12345000
+    // t1 に期待値を格納
+    li t1, 0x12345000
+    addi t1, t1, 0x128 // expected
+    // テスト
+    bne t0, t1, fail
 
     // Success
     // LED に 128 を出力

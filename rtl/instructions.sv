@@ -246,6 +246,18 @@ function [31:0] lui(
     };
 endfunction
 
+// auipc rd, imm
+function [31:0] auipc(
+    input logic [4:0] rd,
+    input logic [19:0] imm
+);
+    auipc = {
+        imm,
+        rd,
+        7'b0010111 // opCode
+    };
+endfunction
+
 // ori rd, rs1, immediate
 // rd = rs1 | immediate
 function [31:0] ori(
@@ -256,9 +268,9 @@ function [31:0] ori(
     ori = {
         imm,
         rs1,
-        3'b110, // funct3
+        3'b110,    // funct3
         rd,
-        7'b0010011 // opCode
+        7'b0010111 // opCode
     };
 endfunction
 
