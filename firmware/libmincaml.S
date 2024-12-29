@@ -249,6 +249,38 @@ put_newline:
     addi s10, s10, -4
     ret
 
+//---------------------------------------------------------
+// 画面をクリア
+//---------------------------------------------------------
+    .globl min_caml_clear_screen
+min_caml_clear_screen:
+    // ra をスタックへ退避
+    addi s10, s10, 4
+    sw ra, -4(s10)
+
+    // 画面クリアのためのエスケープシーケンスを送信
+    li a0, 27
+    call putc
+    li a0, '['
+    call putc
+    li a0, '2'
+    call putc
+    li a0, 'J'
+    call putc
+
+    // カーソルを左に移動
+    li a0, 27
+    call putc
+    li a0, '['
+    call putc
+    li a0, 'H'
+    call putc
+
+    // ra レジスタの値を復元
+    lw ra, -4(s10)
+    addi s10, s10, -4
+    ret
+
 
 //---------------------------------------------------------
 // 1秒間スリープ

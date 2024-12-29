@@ -13,9 +13,7 @@ _start:
     // ヒープポインタの開始アドレス (0x4E000000 ~ 0x4EFFFFFF)
     li s11, 0x4E000000
 
-    // キー入力を待機
-    call getc
-    call put_newline
+    call min_caml_clear_screen
 
     // スタックポインタのアドレスとヒープポインタのアドレスを引数に min_caml_start を呼び出す
     li a0, 0x4F000000
