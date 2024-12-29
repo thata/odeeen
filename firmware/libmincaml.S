@@ -304,3 +304,8 @@ sleep_break:
     lw ra, -4(s10)
     addi s10, s10, -4
     ret
+
+# TODO: マンデルブロをビルドするため、ガワだけ作成。あとで実装するぞ
+    .globl min_caml_float_of_int
+min_caml_float_of_int:
+    ret
