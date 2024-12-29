@@ -379,6 +379,7 @@ module alu_controller(
                 10'b0000000000: aluOp = 4'b0000; // add
                 10'b0100000000: aluOp = 4'b0001; // sub
                 10'b0000000111: aluOp = 4'b1001; // and
+                10'b0000000100: aluOp = 4'b0101; // xor
                 10'b0000000110: aluOp = 4'b1000; // or
                 10'b0000000010: aluOp = 4'b0011; // slt
                 10'b0000000011: aluOp = 4'b0100; // sltu
