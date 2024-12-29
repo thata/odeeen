@@ -12,29 +12,13 @@ _start:
     li s10, 0x4F000000 // スタックポインタの開始アドレス
     li s11, 0x4E000000 // ヒープポインタの開始アドレス
 
-// xor が正常に動いていないような...
-test:
-    li t1, 0xAAAAAAAA
-    li t2, 0xFFFFFFFF
-    xor t3, t1, t2
-    li t4, 0x55555555
-    beq t3, t4, ok_label
-    j ng_label
-ok_label:
-    li t1, 128
-    sw t1, 0(tp)
-    j test
-ng_label:
-    li t1, 1
-    sw t1, 0(tp)
-    j test
-
 loop:
     call getc    // UARTからデータを受信
 
-    // call putc    // UARTへデータを送信
-    li a0, 2147483647
+    // 整数を UART へ出力
+    li a0, -1234567890
     call min_caml_print_int
+    call put_newline
 
     j loop
 
@@ -144,15 +128,25 @@ min_caml_print_int:
 
     // TODO: 負数の絶対値がうまく取れて無いような気がする...
     bgt a0, zero, min_caml_print_int_positive
-    // 負数の場合、s1 に絶対値を格納
+
+min_caml_print_int_negative:
+
+    // 負数の場合、s1 に絶対値を格納して...
     mv s1, a0
     li t1, 0xffffffff
     xor s1, s1, t1
     addi s1, s1, 1
-    mv a0, s1
+
+    // "-" を出力する
+    li a0, '-'
+    call putc
+
+    j min_caml_print_int_main
 
 min_caml_print_int_positive:
     mv s1, a0
+
+min_caml_print_int_main:
 
     // 10ケタ目を出力
     mv a0, s1 // 割られる数

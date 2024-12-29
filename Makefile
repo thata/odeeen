@@ -37,17 +37,17 @@ test:
 
 firmware/firmware.hex:
 
-FIRMWARE_TARGET = libmincaml_test.S
-firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
-	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
-	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+# FIRMWARE_TARGET = libmincaml_test.S
+# firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
+# 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
+# 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
-# FIRMWARE_TARGET = test/fib
-# firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
-# 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
-# 	riscv64-unknown-elf-gcc -nostdlib -march=rv32i -mabi=ilp32 -Wl,-Ttext=0x00000000 firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
-# 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+FIRMWARE_TARGET = test/fib
+firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
+	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
+	riscv64-unknown-elf-gcc -nostdlib -march=rv32i -mabi=ilp32 -Wl,-Ttext=0x00000000 firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
+	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 firmware: firmware/firmware.hex
 
