@@ -1,4 +1,4 @@
-.PHONY: clean prog test
+.PHONY: clean prog test unit-test firmware decompile
 
 all: ulx3s.bit
 
@@ -30,27 +30,30 @@ prog_flash: ulx3s.bit
 
 unit-test:
 	iverilog -g 2012 -s branch_unit_test rtl/instructions.sv rtl/cpu.sv rtl/branch_unit_test.sv && ./a.out
+	iverilog -g 2012 -s alu_test rtl/instructions.sv rtl/cpu.sv rtl/alu_test.sv && ./a.out
 
 test:
 	iverilog -g 2012 -s cpu_test rtl/instructions.sv rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
 
 firmware/firmware.hex:
 
-# FIRMWARE_TARGET = mem_limit.S
-#
-# firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
-# 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
-# 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+FIRMWARE_TARGET = libmincaml_test.S
+firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
+	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
+	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
-FIRMWARE_TARGET = test/fib
-firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
-	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
-	riscv64-unknown-elf-gcc -nostdlib -march=rv32i -mabi=ilp32 -Wl,-Ttext=0x00000000 firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
-	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+# FIRMWARE_TARGET = test/fib
+# firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
+# 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
+# 	riscv64-unknown-elf-gcc -nostdlib -march=rv32i -mabi=ilp32 -Wl,-Ttext=0x00000000 firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
+# 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 firmware: firmware/firmware.hex
 
 # ファームウェア置き換え用のダミーデータを生成
 firmware/firmware_seed.hex:
 	ecpbram -g firmware/firmware_seed.hex -w 32 -d 65536
+
+decompile:
+	riscv64-unknown-elf-objdump -d firmware/firmware.elf
