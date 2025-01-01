@@ -71,7 +71,8 @@ module cpu_test;
 
         $monitoroff; // プログラム書き込み中は $monitor を一時停止
 
-        `include "test_program/beq_and_auipc.sv"
+        // `include "test_program/beq_and_auipc.sv"
+        `include "test_program/fp.sv"
 
         $finish;
     end

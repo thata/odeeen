@@ -90,7 +90,8 @@ module cpu(
     logic branch;
     logic jump;
     logic jump_reg;
-    logic read_reg_type;
+    logic read_reg_type1;
+    logic read_reg_type2;
     logic write_reg_type;
 
     decoder decoder_inst(
@@ -104,7 +105,8 @@ module cpu(
         .branch(branch),
         .jump(jump),
         .jumpReg(jump_reg),
-        .readRegType(read_reg_type),
+        .readRegType1(read_reg_type1),
+        .readRegType2(read_reg_type2),
         .writeRegType(write_reg_type)
     );
 
@@ -178,7 +180,8 @@ module cpu(
         .addr2(rf_addr2),
         .addr3(rf_addr3),
         .writeData3(rf_write_data3),
-        .readRegType(read_reg_type),
+        .readRegType1(read_reg_type1),
+        .readRegType2(read_reg_type2),
         .writeRegType(write_reg_type),
         .readData1(rf_read_data1),
         .readData2(rf_read_data2)
@@ -268,7 +271,8 @@ module decoder(
     output logic branch,
     output logic jump,
     output logic jumpReg,
-    output logic readRegType,
+    output logic readRegType1,
+    output logic readRegType2,
     output logic writeRegType
 );
     logic [6:0] opCode;
@@ -287,9 +291,12 @@ module decoder(
 
     assign opCode = instr[6:0];
 
-    assign memWrite = (opCode === 7'b0100011) ? 1'b1 : 1'b0;
+    assign memWrite = (opCode === 7'b0100011) ? 1'b1 : // sw
+                      (opCode === 7'b0100111) ? 1'b1   // fsw
+                                              : 1'b0;
 
     assign regWrite = (opCode === 7'b0000011) ? 1'b1 : // lw
+                      (opCode === 7'b0000111) ? 1'b1 : // flw
                       (opCode === 7'b0010011) ? 1'b1 : // addi, ori
                       (opCode === 7'b0110011) ? 1'b1 : // R type (add)
                       (opCode === 7'b0110111) ? 1'b1 : // lui
@@ -313,8 +320,9 @@ module decoder(
                        (opCode === 7'b1100011) ? 1'b1   // B type
                                                : 1'b0;
 
-    // lw
-    assign memToReg = (opCode == 7'b0000011) ? 1'b1 : 1'b0;
+    assign memToReg = (opCode == 7'b0000011) ? 1'b1 : // lw
+                      (opCode == 7'b0000111) ? 1'b1   // flw
+                                             : 1'b0;
 
     assign branch = (opCode === 7'b1100011) ? 1'b1 // B type
                                             : 1'b0;
@@ -330,7 +338,10 @@ module decoder(
     assign funct7 = instr[31:25];
     assign preAluOp = (opCode == 7'b1100011) ? 2'b01 : // B type => sub
                       (opCode == 7'b0000011) ? 2'b00 : // lw => add
+                      (opCode == 7'b0000111) ? 2'b00 : // flw => add
+                      (opCode == 7'b0000111) ? 2'b00 : // flw => add
                       (opCode == 7'b0100011) ? 2'b00 : // sw => add
+                      (opCode == 7'b0100111) ? 2'b00 : // fsw => add
                       (opCode == 7'b1101111) ? 2'b00 : // jal => add
                       (opCode == 7'b1100111) ? 2'b00 : // jalr => add
                       (opCode == 7'b0110111) ? 2'b00 : // lui => add
@@ -338,8 +349,14 @@ module decoder(
                       (opCode == 7'b0010011) ? 2'b11   // addi, ori => funct3
                                              : 2'b10;  // funct
 
-    assign readRegType = 1'b0;  // 整数レジスタを参照
-    assign writeRegType = 1'b0; // 整数レジスタに書き込む
+    assign readRegType1 = 1'b0;  // 整数レジスタを参照
+
+    assign readRegType2 = (opCode === 7'b0100111) ? 1'b1   // 浮動小数点レジスタを参照 (fsw)
+                                                  : 1'b0;  // 整数レジスタを参照
+
+    assign writeRegType = (opCode === 7'b0000111) ? 1'b1  // 浮動小数点レジスタへ書き込み (flw)
+                                                  : 1'b0; // 整数レジスタへ書き込み
+
 
     // always @(*) begin
     //     $display("opCode %b", opCode);
@@ -538,8 +555,9 @@ module regfile(
     input logic we3,
     input logic [4:0] addr1, addr2, addr3,
     input logic [31:0] writeData3,
-    input logic readRegType,  // 0: 整数レジスタ, 1: 浮動小数点レジスタ
-    input logic writeRegType, // 0: 整数レジスタ, 1: 浮動小数点レジスタ
+    input logic readRegType1,  // 0: 整数レジスタ, 1: 浮動小数点レジスタ
+    input logic readRegType2,  // 0: 整数レジスタ, 1: 浮動小数点レジスタ
+    input logic writeRegType,  // 0: 整数レジスタ, 1: 浮動小数点レジスタ
     output logic [31:0] readData1, readData2
 );
     logic [31:0] intReadData1, intReadData2;
@@ -559,8 +577,12 @@ module regfile(
     assign fpReadData2 = fpRegisters[addr2];
 
     // readRegType が 0 の場合は整数レジスタ、1 の場合は浮動小数点レジスタを参照する
-    assign readData1 = (readRegType) ? intReadData1 : fpReadData1;
-    assign readData2 = (readRegType) ? intReadData2 : fpReadData2;
+    assign readData1 = (readRegType1 === 1'b0) ? intReadData1 :
+                       (readRegType1 === 1'b1) ? fpReadData1
+                                              : 32'hxxxxxxxx;
+    assign readData2 = (readRegType2 === 1'b0) ? intReadData2 :
+                       (readRegType2 === 1'b1) ? fpReadData2
+                                              : 32'hxxxxxxxx;
 
     always_ff @(posedge clk) begin
         if (!reset_n) begin
@@ -570,10 +592,10 @@ module regfile(
             end
         end else if (we3) begin
             // writeRegType が 0 の場合は整数レジスタ、1 の場合は浮動小数点レジスタに書き込む
-            if (writeRegType)
-                registers[addr3] <= writeData3;
-            else
-                fpRegisters[addr3] <= writeData3;
+            case (writeRegType)
+                1'b0: registers[addr3] <= writeData3;
+                1'b1: fpRegisters[addr3] <= writeData3;
+            endcase
         end
     end
 
@@ -586,5 +608,6 @@ module regfile(
         // $display("$2 %b", registers[2]);
         // $display("$30 %b", registers[30]);
         // $display("$31 %b", registers[31]);
+        // $display("f5 %d", fpRegisters[5]);
     end
 endmodule
