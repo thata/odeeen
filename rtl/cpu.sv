@@ -90,6 +90,8 @@ module cpu(
     logic branch;
     logic jump;
     logic jump_reg;
+    logic read_reg_type;
+    logic write_reg_type;
 
     decoder decoder_inst(
         .instr(instr_reg),
@@ -101,7 +103,9 @@ module cpu(
         .memToReg(dc_mem_to_reg),
         .branch(branch),
         .jump(jump),
-        .jumpReg(jump_reg)
+        .jumpReg(jump_reg),
+        .readRegType(read_reg_type),
+        .writeRegType(write_reg_type)
     );
 
     //-------------------------------------
@@ -174,6 +178,8 @@ module cpu(
         .addr2(rf_addr2),
         .addr3(rf_addr3),
         .writeData3(rf_write_data3),
+        .readRegType(read_reg_type),
+        .writeRegType(write_reg_type),
         .readData1(rf_read_data1),
         .readData2(rf_read_data2)
     );
@@ -261,7 +267,9 @@ module decoder(
     output logic memToReg,
     output logic branch,
     output logic jump,
-    output logic jumpReg
+    output logic jumpReg,
+    output logic readRegType,
+    output logic writeRegType
 );
     logic [6:0] opCode;
     logic [2:0] funct3;
@@ -329,6 +337,9 @@ module decoder(
                       (opCode == 7'b0010111) ? 2'b00 : // auipc => add
                       (opCode == 7'b0010011) ? 2'b11   // addi, ori => funct3
                                              : 2'b10;  // funct
+
+    assign readRegType = 1'b0;  // 整数レジスタを参照
+    assign writeRegType = 1'b0; // 整数レジスタに書き込む
 
     // always @(*) begin
     //     $display("opCode %b", opCode);
@@ -527,22 +538,42 @@ module regfile(
     input logic we3,
     input logic [4:0] addr1, addr2, addr3,
     input logic [31:0] writeData3,
+    input logic readRegType,  // 0: 整数レジスタ, 1: 浮動小数点レジスタ
+    input logic writeRegType, // 0: 整数レジスタ, 1: 浮動小数点レジスタ
     output logic [31:0] readData1, readData2
 );
+    logic [31:0] intReadData1, intReadData2;
+    logic [31:0] fpReadData1, fpReadData2;
 
-    // $0 へは書き込めるけど参照しても常に 0 が返る
+    // 整数レジスタ
     logic [31:0] registers [0:31];
 
-    assign readData1 = (addr1 === 5'b0) ? 32'b0 : registers[addr1];
-    assign readData2 = (addr2 === 5'b0) ? 32'b0 : registers[addr2];
+    // 浮動小数点レジスタ
+    logic [31:0] fpRegisters [0:31];
+
+    // $0 へは書き込めるけど参照しても常に 0 が返る
+    assign intReadData1 = (addr1 === 5'b0) ? 32'b0 : registers[addr1];
+    assign intReadData2 = (addr2 === 5'b0) ? 32'b0 : registers[addr2];
+
+    assign fpReadData1 = fpRegisters[addr1];
+    assign fpReadData2 = fpRegisters[addr2];
+
+    // readRegType が 0 の場合は整数レジスタ、1 の場合は浮動小数点レジスタを参照する
+    assign readData1 = (readRegType) ? intReadData1 : fpReadData1;
+    assign readData2 = (readRegType) ? intReadData2 : fpReadData2;
 
     always_ff @(posedge clk) begin
         if (!reset_n) begin
             for (int i = 0; i < 32; i++) begin
                 registers[i] <= 32'b0;
+                fpRegisters[i] <= 32'b0;
             end
         end else if (we3) begin
-            registers[addr3] <= writeData3;
+            // writeRegType が 0 の場合は整数レジスタ、1 の場合は浮動小数点レジスタに書き込む
+            if (writeRegType)
+                registers[addr3] <= writeData3;
+            else
+                fpRegisters[addr3] <= writeData3;
         end
     end
 
