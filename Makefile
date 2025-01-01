@@ -33,7 +33,7 @@ unit-test:
 	iverilog -g 2012 -s alu_test rtl/instructions.sv rtl/cpu.sv rtl/alu_test.sv && ./a.out
 
 test:
-	iverilog -g 2012 -s cpu_test rtl/instructions.sv rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
+	iverilog -g 2012 -s cpu_test -I rtl rtl/cpu_test.sv rtl/bram_controller.sv rtl/cpu.sv && ./a.out
 
 firmware/firmware.hex:
 
