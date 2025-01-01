@@ -322,3 +322,72 @@ function [31:0] sll(
         7'b0110011 // opCode
     };
 endfunction
+
+// flw rd, imm(rs1)
+// rd = M[rs1+imm]
+function [31:0] flw(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [11:0] imm
+);
+    lw = {
+        imm,
+        rs1,
+        3'b010, // funct3
+        rd,
+        7'b0000111 // opCode
+    };
+endfunction
+
+// fsw rs2, imm(rs1)
+// M[rs1+imm] = rs2
+function [31:0] fsw(
+    input logic [4:0] rs1,
+    input logic [4:0] rs2,
+    input logic [11:0] imm
+);
+    sw = {
+        imm[11:5],
+        rs2,
+        rs1,
+        3'b010, // funct3
+        imm[4:0],
+        7'b0100111 // opCode
+    };
+endfunction
+
+// feq.s
+
+// flt.s (無くてもいいかも)
+
+// fle.s
+
+// fadd.s
+
+// fsub.s
+
+// fmul.s
+
+// fdiv.s
+
+// fsgnj.s
+// (Floating-point Sign Inject, Single-Precision)
+// f[rd] = {f{rs2][31], f[rs1][30:0]}
+
+// fsgnjn.s
+// (Floating-point Sign Inject-Negate, Single-Precision)
+// f[rd] = {~f[rs2][31], f[rs1][30:0]}
+
+
+
+
+
+
+// fneg.s
+// f[rd] = -f[rs1]
+// => fsgnjn.s rd, rs1, rs1　に展開される
+
+// fmv.s
+// f[rd] = f[rs1]
+// => fsgnj.s rd, rs1, rs1 に展開される
+
