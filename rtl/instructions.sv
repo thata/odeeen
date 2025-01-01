@@ -330,7 +330,7 @@ function [31:0] flw(
     input logic [4:0] rs1,
     input logic [11:0] imm
 );
-    lw = {
+    flw = {
         imm,
         rs1,
         3'b010, // funct3
@@ -346,7 +346,7 @@ function [31:0] fsw(
     input logic [4:0] rs2,
     input logic [11:0] imm
 );
-    sw = {
+    fsw = {
         imm[11:5],
         rs2,
         rs1,
