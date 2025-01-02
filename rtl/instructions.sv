@@ -356,19 +356,57 @@ function [31:0] fsw(
     };
 endfunction
 
+// fadd.s
+// rd = rs1 + rs2
+function [31:0] fadd_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fadd_s = {
+        7'b0000000, // funct7
+        rs2,
+        rs1,
+        3'b111, // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
+
+// fsub.s
+// rd = rs1 - rs2
+function [31:0] fsub_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fsub_s = {
+        7'b0000100, // funct7
+        rs2,
+        rs1,
+        3'b111, // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
+
+// fmul.s
+
+// fdiv.s
+
+// fcvt.s.w
+// Floating-point Convert to Single from Word)
+// 単精度浮動小数点数 -> 32ビット整数
+
+// fcvt.w.s
+// Floating-point Convert to Word from Single
+// 32ビット整数 -> 単精度浮動小数点数
+
 // feq.s
 
 // flt.s (無くてもいいかも)
 
 // fle.s
-
-// fadd.s
-
-// fsub.s
-
-// fmul.s
-
-// fdiv.s
 
 // fsgnj.s
 // (Floating-point Sign Inject, Single-Precision)
@@ -379,9 +417,7 @@ endfunction
 // f[rd] = {~f[rs2][31], f[rs1][30:0]}
 
 
-
-
-
+//（別の命令に展開されるもの）
 
 // fneg.s
 // f[rd] = -f[rs1]
