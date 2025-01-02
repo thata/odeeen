@@ -10,10 +10,15 @@ instructions[3] = jal(0, 0);          // 無限ループ
 instructions[4] = sw(0, 5, 12'h400); // M[0x400] = x5
 
 // auipc のテスト
-instructions[5] = auipc(5, 20'h12345);   // x5 = pc + 0x12345000
-instructions[6] = sw(0, 5, 12'h404);  // M[0x404] = x5
-instructions[7] = jal(0, 0);           // 無限ループ
+instructions[5] = auipc(5, 20'h12345); // x5 = pc + 0x12345000
+instructions[6] = sw(0, 5, 12'h404);   // M[0x404] = x5
 
+// sw のテスト
+instructions[7] = addi(5, 0, 123);    // x5 = 123
+instructions[8] = sw(0, 5, 12'h408);  // M[0x408] = x5
+instructions[9] = addi(5, 5, 123);    // x5 = x5 + 123
+instructions[10] = sw(0, 5, 12'h40c); // M[0x40c] = x5
+instructions[11] = jal(0, 0);         // 無限ループ
 
 /**
  * プログラムの書き込み
@@ -39,8 +44,8 @@ mem_monitor_on = 0;
 // $monitoron; // $monitor を再開
 
 /**
-    * リセットして、0番地からプログラムを実行
-    */
+ * リセットして、0番地からプログラムを実行
+ */
 reset_n = 0;
 #10;
 reset_n = 1;
@@ -49,15 +54,17 @@ reset_n = 1;
 #2000;
 
 // 実行が終わった頃合いを見て、メモリの内容を確認
+
 mem_monitor_on = 1;
 mem_monitor_valid_reg = 1;
 mem_monitor_addr_reg = 32'h00000400;
 mem_monitor_wstrb_reg = 4'b0000;
 #10;
 wait(mem_ready);
+#10;
 assert(
     mem_rdata === 42
-) $display("PASSED"); else $display("expected 42 but actual %d", mem_rdata);
+) $display("PASSED"); else $display("FAILED: %d", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
 
@@ -66,8 +73,33 @@ mem_monitor_addr_reg = 32'h00000404;
 mem_monitor_wstrb_reg = 4'b0000;
 #10;
 wait(mem_ready);
+#10;
 assert(
     mem_rdata === 32'h12345014
-) $display("PASSED"); else $display("expected 42 but actual %h", mem_rdata);
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h00000408;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+#10;
+assert(
+    mem_rdata === 123
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h0000040c;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+#10;
+assert(
+    mem_rdata === 246
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
