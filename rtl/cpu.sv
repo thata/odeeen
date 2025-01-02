@@ -54,15 +54,19 @@ module cpu(
     typedef enum {
         IF_STAGE,
         EX_STAGE,
+        FP1_STAGE, // FPU へ入力を渡す
+        FP2_STAGE, // FPU からの出力を待機
+        FP3_STAGE, // FPU の出力をレジスタへ保存
         MEM_STAGE,
         WB_STAGE,
         ERR_STAGE
     } stage_t;
     stage_t stage_reg, stage_next;
 
-    logic [31:0] pc_reg, pc_next;               // PC
-    logic [31:0] instr_reg, instr_next;         // フェッチした命令
-    logic [31:0] mem_rdata_reg, mem_rdata_next; // lw でメモリから読み込んだデータ
+    logic [31:0] pc_reg, pc_next;                 // PC
+    logic [31:0] instr_reg, instr_next;           // フェッチした命令
+    logic [31:0] mem_rdata_reg, mem_rdata_next;   // lw でメモリから読み込んだデータ
+    logic [31:0] fpu_result_reg, fpu_result_next; // FPU の演算結果
 
     //-------------------------------------
     // 出力信号
@@ -93,6 +97,7 @@ module cpu(
     logic read_reg_type1;
     logic read_reg_type2;
     logic write_reg_type;
+    logic fpu;
 
     decoder decoder_inst(
         .instr(instr_reg),
@@ -107,7 +112,8 @@ module cpu(
         .jumpReg(jump_reg),
         .readRegType1(read_reg_type1),
         .readRegType2(read_reg_type2),
-        .writeRegType(write_reg_type)
+        .writeRegType(write_reg_type),
+        .fpu(fpu)
     );
 
     //-------------------------------------
@@ -143,6 +149,38 @@ module cpu(
     );
 
     //-------------------------------------
+    // FPU
+    //-------------------------------------
+
+    logic [3:0] fpu_op;
+    logic [31:0] fpu_in1, fpu_in2, fpu_result;
+    logic fpu_in1_stb, fpu_in2_stb, fpu_result_ack;
+    logic fpu_in1_ack, fpu_in2_ack, fpu_result_stb;
+
+    assign fpu_op = 4'b0000; // fadd
+    assign fpu_in1 = rf_read_data1;
+    assign fpu_in2 = rf_read_data2;
+
+    assign fpu_in1_stb = (stage_reg == FP1_STAGE || stage_reg == FP2_STAGE) ? 1'b1 : 1'b0;
+    assign fpu_in2_stb = (stage_reg == FP1_STAGE || stage_reg == FP2_STAGE) ? 1'b1 : 1'b0;
+    assign fpu_result_ack = (stage_reg == FP3_STAGE) ? 1'b1 : 1'b0;
+
+    fpu_controller fpu_inst(
+        .clk(clk),
+        .reset_n(reset_n),
+        .op(fpu_op),
+        .in1(fpu_in1),
+        .in2(fpu_in2),
+        .in1_stb(fpu_in1_stb),
+        .in2_stb(fpu_in2_stb),
+        .in1_ack(fpu_in1_ack),
+        .in2_ack(fpu_in2_ack),
+        .out(fpu_result),
+        .out_stb(fpu_result_stb),
+        .out_ack(fpu_result_ack)
+    );
+
+    //-------------------------------------
     // 条件分岐判定ユニット
     //-------------------------------------
     logic branch_result;
@@ -168,8 +206,9 @@ module cpu(
     assign rf_addr2 = instr_reg[24:20]; // rs2
     assign rf_addr3 = instr_reg[11:7];  // rd
     assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
-    assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg : // lw の場合
-                            (jump)          ? pc_reg + 4      // jal, jalr の場合
+    assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg :  // lw の場合
+                            (jump)          ? pc_reg + 4 :     // jal, jalr の場合
+                            (fpu === 1'b1)  ? fpu_result_reg   // FPU の演算結果
                                             : alu_result;
 
     regfile regfile_inst(
@@ -194,11 +233,13 @@ module cpu(
             pc_reg <= 0;
             instr_reg <= 32'h00000000;
             mem_rdata_reg <= 32'h00000000;
+            fpu_result_reg <= 32'h00000000;
         end else begin
             stage_reg <= stage_next;
             pc_reg <= pc_next;
             instr_reg <= instr_next;
             mem_rdata_reg <= mem_rdata_next;
+            fpu_result_reg <= fpu_result_next;
         end
     end
 
@@ -208,6 +249,7 @@ module cpu(
         instr_next = instr_reg;
         mem_rdata_next = mem_rdata_reg;
         pc_next = pc_reg;
+        fpu_result_next = fpu_result_reg;
 
         case (stage_reg)
             // 命令フェッチ
@@ -222,7 +264,10 @@ module cpu(
             end
             // 実行
             EX_STAGE: begin
-                if (dc_mem_write) begin
+                if (fpu) begin
+                    // 浮動小数点演算の場合
+                    stage_next = FP1_STAGE;
+                end else if (dc_mem_write) begin
                     // sw の場合
                     stage_next = MEM_STAGE;
                 end else if (dc_mem_to_reg) begin
@@ -232,6 +277,24 @@ module cpu(
                     // メモリアクセスが不要な場合は、MEM_STAGE を飛ばして WB_STAGE へ遷移する
                     stage_next = WB_STAGE;
                 end
+            end
+            // 浮動小数点演算1（FPUへ入力を渡す）
+            FP1_STAGE: begin
+                stage_next = FP2_STAGE;
+            end
+            // 浮動小数点演算2（FPUからの出力を待機）
+            FP2_STAGE: begin
+                if (fpu_result_stb) begin
+                    stage_next = FP3_STAGE;
+                end else begin
+                    stage_next = FP2_STAGE;
+                end
+            end
+            // 浮動小数点演算3（FPUの出力をレジスタへ保存）
+            FP3_STAGE: begin
+                // FPU の演算結果をレジスタに保存
+                fpu_result_next = fpu_result;
+                stage_next = MEM_STAGE;
             end
             // メモリアクセス
             MEM_STAGE: begin
@@ -273,7 +336,8 @@ module decoder(
     output logic jumpReg,
     output logic readRegType1,
     output logic readRegType2,
-    output logic writeRegType
+    output logic writeRegType,
+    output logic fpu
 );
     logic [6:0] opCode;
     logic [2:0] funct3;
@@ -299,6 +363,7 @@ module decoder(
                       (opCode === 7'b0000111) ? 1'b1 : // flw
                       (opCode === 7'b0010011) ? 1'b1 : // addi, ori
                       (opCode === 7'b0110011) ? 1'b1 : // R type (add)
+                      (opCode === 7'b1010011) ? 1'b1 : // RV32F R type
                       (opCode === 7'b0110111) ? 1'b1 : // lui
                       (opCode === 7'b0010111) ? 1'b1 : // auipc
                       (opCode === 7'b1101111) ? 1'b1 : // jal
@@ -349,14 +414,19 @@ module decoder(
                       (opCode == 7'b0010011) ? 2'b11   // addi, ori => funct3
                                              : 2'b10;  // funct
 
-    assign readRegType1 = 1'b0;  // 整数レジスタを参照
-
-    assign readRegType2 = (opCode === 7'b0100111) ? 1'b1   // 浮動小数点レジスタを参照 (fsw)
+    // assign readRegType1 = 1'b0;  // 整数レジスタを参照
+    assign readRegType1 = (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
                                                   : 1'b0;  // 整数レジスタを参照
 
-    assign writeRegType = (opCode === 7'b0000111) ? 1'b1  // 浮動小数点レジスタへ書き込み (flw)
-                                                  : 1'b0; // 整数レジスタへ書き込み
+    assign readRegType2 = (opCode === 7'b0100111) ? 1'b1 : // 浮動小数点レジスタを参照 (fsw)
+                          (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
+                                                  : 1'b0;  // 整数レジスタを参照
 
+    assign writeRegType = (opCode === 7'b0000111) ? 1'b1 : // 浮動小数点レジスタへ書き込み (flw)
+                          (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
+                                                  : 1'b0;  // 整数レジスタへ書き込み
+
+    assign fpu = (opCode === 7'b1010011) ? 1'b1 : 1'b0;    // FPU を使う命令（RV32F R-type）
 
     // always @(*) begin
     //     $display("opCode %b", opCode);
@@ -610,5 +680,7 @@ module regfile(
         // $display("$30 %b", registers[30]);
         // $display("$31 %b", registers[31]);
         // $display("f5 %d", fpRegisters[5]);
+        // $display("f6 %d", fpRegisters[6]);
+        // $display("f7 %d", fpRegisters[7]);
     end
 endmodule
