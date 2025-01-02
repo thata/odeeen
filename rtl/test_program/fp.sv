@@ -3,13 +3,13 @@
  */
 
 instructions[0] = flw(5, 0, 32'h100);    // f5 = M[x0+0x100]
-instructions[1] = fsw(0, 5, 32'h104);    // M[x0+0x104] = f5
-instructions[2] = flw(6, 0, 32'h104);    // f6 = M[x0+0x104]
-instructions[3] = jal(0, 0);            // 無限ループ
-
+instructions[1] = fsw(0, 5, 32'h104);    // M[0x104] = f5
+instructions[2] = flw(6, 0, 32'h104);    // f6 = M[0x104]
+instructions[3] = fsw(0, 6, 32'h108);    // M[0x108] = f6
+instructions[4] = jal(0, 0);             // 無限ループ
 
 // テスト用の浮動小数点数データ
-instructions[64] = 32'h10000000;        // M[0x100] = -0.0
+instructions[64] = 32'h3f800000;        // M[0x100] = 1.0
 
 
 /**
@@ -53,7 +53,19 @@ mem_monitor_wstrb_reg = 4'b0000;
 #10;
 wait(mem_ready);
 assert(
-    mem_rdata === 32'h10000000
+    mem_rdata === 32'h3f800000
+) $display("PASSED"); else $display("FAILED: %d", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h108;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h3f800000
 ) $display("PASSED"); else $display("FAILED: %d", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;

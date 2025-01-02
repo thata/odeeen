@@ -439,8 +439,9 @@ module immgen(
 
     assign imm5 = instr[24:20];
 
-    assign imm12 = (opCode == 7'b0100011) ? {instr[31:25], instr[11:7]} // S type
-                                          : instr[31:20];               // other
+    assign imm12 = (opCode == 7'b0100011) ? {instr[31:25], instr[11:7]} : // sw
+                   (opCode == 7'b0100111) ? {instr[31:25], instr[11:7]}   // fsw
+                                          : instr[31:20];                 // other
 
     // B type
     assign imm13 = {instr[31], instr[7], instr[30:25], instr[11:8], 1'b0};
