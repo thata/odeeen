@@ -12,7 +12,7 @@ instructions[3] = fsw(0, 6, 32'h108);    // M[0x108] = f6
 
 // FADD.S のテスト
 instructions[4] = flw(5, 0, 32'h100);    // f5 = M[0x100]
-instructions[5] = flw(6, 0, 32'h100);    // f5 = M[0x100]
+instructions[5] = flw(6, 0, 32'h100);    // f6 = M[0x100]
 instructions[6] = fadd_s(7, 5, 6);       // f7 = f5 + f6
 instructions[7] = fsw(0, 7, 32'h10c);    // M[0x10c] = f7
 
