@@ -415,21 +415,30 @@ module decoder(
                       (opCode == 7'b0010011) ? 2'b11   // addi, ori => funct3
                                              : 2'b10;  // funct
 
-    // assign readRegType1 = 1'b0;  // 整数レジスタを参照
-    assign readRegType1 = (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
-                                                  : 1'b0;  // 整数レジスタを参照
+    // NOTE:
+    // fcvt.s.w (int to float) の場合（opCode = 1010011, funct7 = 1101000）
+    //   readRegType1 は 0 で、writeRegType は 1 になる
+    // fcvt.w.s (float to int) の場合（opCode = 1010011, funct7 = 1100000）
+    //   readRegType1 は 1 で、writeRegType は 0 になる
+
+    assign readRegType1 = (opCode === 7'b1010011 && funct7 === 7'b1101000) ? 1'b0 : // 整数レジスタを参照 (fcvt.s.w = int to float)
+                          (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照 (fcvt.s.w 以外の RV32F の R-type 命令)
+                                                                           : 1'b0;  // 整数レジスタを参照
 
     assign readRegType2 = (opCode === 7'b0100111) ? 1'b1 : // 浮動小数点レジスタを参照 (fsw)
                           (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
                                                   : 1'b0;  // 整数レジスタを参照
 
-    assign writeRegType = (opCode === 7'b0000111) ? 1'b1 : // 浮動小数点レジスタへ書き込み (flw)
-                          (opCode === 7'b1010011) ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
-                                                  : 1'b0;  // 整数レジスタへ書き込み
+    assign writeRegType = (opCode === 7'b0000111)                          ? 1'b1 : // 浮動小数点レジスタへ書き込み (flw)
+                          (opCode === 7'b1010011 && funct7 === 7'b1100000) ? 1'b0 : // 整数レジスタへ書き込み (fcvt.w.s = float to int)
+                          (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
+                                                                           : 1'b0;  // 整数レジスタへ書き込み
 
     assign fpu = (opCode === 7'b1010011) ? 1'b1 : 1'b0;    // FPU を使う命令（RV32F R-type）
 
     assign fpuOp = (funct7 === 7'b0000000) ? 4'b0000 : // fadd
+                   (funct7 === 7'b1101000) ? 4'b0100 : // fcvt.s.w (int to float)
+                   (funct7 === 7'b1100000) ? 4'b0101 : // fcvt.w.s (float to int)
                    (funct7 === 7'b0000100) ? 4'b0001 : // fsub
                    (funct7 === 7'b0001000) ? 4'b0010 : // fmul
                    (funct7 === 7'b0001100) ? 4'b0011   // fdiv

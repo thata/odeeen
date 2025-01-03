@@ -425,33 +425,120 @@ endfunction
 // fcvt.s.w
 // Floating-point Convert to Single from Word)
 // 単精度浮動小数点数 -> 32ビット整数
+function [31:0] fcvt_s_w(
+    input logic [4:0] rd,
+    input logic [4:0] rs1
+);
+    fcvt_s_w = {
+        7'b1101000, // funct7
+        5'b00000,   // rs2 = 00000
+        rs1,
+        3'b111,     // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011  // opCode
+    };
+endfunction
 
 // fcvt.w.s
 // Floating-point Convert to Word from Single
 // 32ビット整数 -> 単精度浮動小数点数
-
-// feq.s
-
-// flt.s (無くてもいいかも)
-
-// fle.s
+function [31:0] fcvt_w_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1
+);
+    fcvt_w_s = {
+        7'b1100000, // funct7
+        5'b00000,   // rs2 = 00000
+        rs1,
+        3'b111,     // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011  // opCode
+    };
+endfunction
 
 // fsgnj.s
 // (Floating-point Sign Inject, Single-Precision)
 // f[rd] = {f{rs2][31], f[rs1][30:0]}
+function [31:0] fsgnj_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fsgnj_s = {
+        7'b0010000, // funct7
+        rs2,
+        rs1,
+        3'b000, // funct3
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
 // fsgnjn.s
 // (Floating-point Sign Inject-Negate, Single-Precision)
 // f[rd] = {~f[rs2][31], f[rs1][30:0]}
+function [31:0] fsgnjn_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fsgnjn_s = {
+        7'b0010000, // funct7
+        rs2,
+        rs1,
+        3'b001, // funct3
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
+// feq.s
+// x[rd] = (f[rs1] == f[rs2]) ? 1 : 0
+function [31:0] feq_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    feq_s = {
+        7'b1010000, // funct7
+        rs2,
+        rs1,
+        3'b010, // funct3
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
-//（別の命令に展開されるもの）
+// flt.s
+// x[rd] = (f[rs1] < f[rs2]) ? 1 : 0
+function [31:0] flt_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    flt_s = {
+        7'b1010000, // funct7
+        rs2,
+        rs1,
+        3'b001, // funct3
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
-// fneg.s
-// f[rd] = -f[rs1]
-// => fsgnjn.s rd, rs1, rs1　に展開される
-
-// fmv.s
-// f[rd] = f[rs1]
-// => fsgnj.s rd, rs1, rs1 に展開される
-
+// fle.s
+// x[rd] = (f[rs1] <= f[rs2]) ? 1 : 0
+function [31:0] fle_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fle_s = {
+        7'b1010000, // funct7
+        rs2,
+        rs1,
+        3'b000, // funct3
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction

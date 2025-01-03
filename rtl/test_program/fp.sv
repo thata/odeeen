@@ -34,7 +34,14 @@ instructions[17] = fsw(0, 5, 32'h124);    // M[0x110] = f5
 instructions[18] = flw(6, 0, 32'h124);    // f6 = M[0x110]
 instructions[19] = fsw(0, 6, 32'h128);    // M[0x114] = f6
 
-instructions[20] = jal(0, 0);             // 無限ループ
+// FCVT のテスト
+instructions[20] = flw(5, 0, 32'h108);    // f5 = 3.0
+instructions[21] = fcvt_w_s(6, 5);        // x6 = (int)f5
+instructions[22] = sw(0, 6, 32'h12c);     // M[0x12c] = x6
+instructions[23] = fcvt_s_w(7, 6);        // f7 = (float)x6
+instructions[24] = fsw(0, 7, 32'h130);    // M[0x130] = f7
+
+instructions[25] = jal(0, 0);             // 無限ループ
 
 // テスト用の浮動小数点数データ
 instructions[64] = 32'h3f800000;        // M[0x100] = 1.0
@@ -147,6 +154,30 @@ mem_monitor_wstrb_reg = 4'b0000;
 wait(mem_ready);
 assert(
     mem_rdata === 32'h3f800000
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h12c;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h3
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h130;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h40400000
 ) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
