@@ -40,21 +40,30 @@ module fpu_controller(
     assign multiplier_in2_stb = (op === 4'b0010) ? in1_stb : 1'b0;
     assign multiplier_out_ack = (op === 4'b0010) ? out_ack : 1'b0;
 
+    assign divider_in1_stb = (op === 4'b0011) ? in1_stb : 1'b0;
+    assign divider_in2_stb = (op === 4'b0011) ? in1_stb : 1'b0;
+    assign divider_out_ack = (op === 4'b0011) ? out_ack : 1'b0;
+
+
     //------------------------------------------------------------------------------
     // 出力セレクタ
     //------------------------------------------------------------------------------
 
     assign in1_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in1_ack :
-                     (op === 4'b0010)                   ? multiplier_in1_ack
+                     (op === 4'b0010)                   ? multiplier_in1_ack :
+                     (op === 4'b0011)                   ? divider_in1_ack
                                                         : 1'bx;
     assign in2_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in2_ack :
-                     (op === 4'b0010)                   ? multiplier_in2_ack
+                     (op === 4'b0010)                   ? multiplier_in2_ack :
+                     (op === 4'b0011)                   ? divider_in2_ack
                                                         :1'bx;
     assign out_stb = (op === 4'b0000 || op === 4'b0001) ? adder_out_stb :
-                     (op === 4'b0010)                   ? multiplier_out_stb
+                     (op === 4'b0010)                   ? multiplier_out_stb :
+                     (op === 4'b0011)                   ? divider_out_stb
                                                         : 1'bx;
     assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out :
-                 (op === 4'b0010)                   ? multiplier_out
+                 (op === 4'b0010)                   ? multiplier_out :
+                 (op === 4'b0011)                   ? divider_out
                                                     : 32'bx;
 
     //------------------------------------------------------------------------------
@@ -110,5 +119,30 @@ module fpu_controller(
         .output_z_ack(multiplier_out_ack)
     );
 
+    //------------------------------------------------------------------------------
+    // Floating-point Divider
+    //------------------------------------------------------------------------------
+
+    logic divider_in1_stb; // in1 が有効になったらアサートする
+    logic divider_in2_stb; // in2 が有効になったらアサートする
+    logic divider_in1_ack; // 受け手側で in1 の読み込みが終わったらアサートされる
+    logic divider_in2_ack; // 受け手側で in2 の読み込みが終わったらアサートされる
+    logic [31:0] divider_out;
+    logic divider_out_stb; // 計算結果が out に返ってきたらアサートされる
+    logic divider_out_ack; // out の読み込みが終わったらアサートしてあげる
+
+    divider divider_inst (
+        .clk(clk),
+        .rst(~reset_n),
+        .input_a(in1),
+        .input_a_stb(divider_in1_stb),
+        .input_a_ack(divider_in1_ack),
+        .input_b(in2),
+        .input_b_stb(divider_in2_stb),
+        .input_b_ack(divider_in2_ack),
+        .output_z(divider_out),
+        .output_z_stb(divider_out_stb),
+        .output_z_ack(divider_out_ack)
+    );
 
 endmodule
