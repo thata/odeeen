@@ -36,14 +36,26 @@ module fpu_controller(
     assign adder_in2_stb = (op === 4'b0000 || op === 4'b0001) ? in1_stb : 1'b0;
     assign adder_out_ack = (op === 4'b0000 || op === 4'b0001) ? out_ack : 1'b0;
 
+    assign multiplier_in1_stb = (op === 4'b0010) ? in1_stb : 1'b0;
+    assign multiplier_in2_stb = (op === 4'b0010) ? in1_stb : 1'b0;
+    assign multiplier_out_ack = (op === 4'b0010) ? out_ack : 1'b0;
+
     //------------------------------------------------------------------------------
     // 出力セレクタ
     //------------------------------------------------------------------------------
 
-    assign in1_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in1_ack : 1'bx;
-    assign in2_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in2_ack : 1'bx;
-    assign out_stb = (op === 4'b0000 || op === 4'b0001) ? adder_out_stb : 1'bx;
-    assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out : 32'bx;
+    assign in1_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in1_ack :
+                     (op === 4'b0010)                   ? multiplier_in1_ack
+                                                        : 1'bx;
+    assign in2_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in2_ack :
+                     (op === 4'b0010)                   ? multiplier_in2_ack
+                                                        :1'bx;
+    assign out_stb = (op === 4'b0000 || op === 4'b0001) ? adder_out_stb :
+                     (op === 4'b0010)                   ? multiplier_out_stb
+                                                        : 1'bx;
+    assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out :
+                 (op === 4'b0010)                   ? multiplier_out
+                                                    : 32'bx;
 
     //------------------------------------------------------------------------------
     // Floating-point Adder
@@ -71,5 +83,32 @@ module fpu_controller(
         .output_z_stb(adder_out_stb),
         .output_z_ack(adder_out_ack)
     );
+
+    //------------------------------------------------------------------------------
+    // Floating-point Multiplier
+    //------------------------------------------------------------------------------
+
+    logic multiplier_in1_stb; // in1 が有効になったらアサートする
+    logic multiplier_in2_stb; // in2 が有効になったらアサートする
+    logic multiplier_in1_ack; // 受け手側で in1 の読み込みが終わったらアサートされる
+    logic multiplier_in2_ack; // 受け手側で in2 の読み込みが終わったらアサートされる
+    logic [31:0] multiplier_out;
+    logic multiplier_out_stb; // 計算結果が out に返ってきたらアサートされる
+    logic multiplier_out_ack; // out の読み込みが終わったらアサートしてあげる
+
+    multiplier multiplier_inst (
+        .clk(clk),
+        .rst(~reset_n),
+        .input_a(in1),
+        .input_a_stb(multiplier_in1_stb),
+        .input_a_ack(multiplier_in1_ack),
+        .input_b(in2),
+        .input_b_stb(multiplier_in2_stb),
+        .input_b_ack(multiplier_in2_ack),
+        .output_z(multiplier_out),
+        .output_z_stb(multiplier_out_stb),
+        .output_z_ack(multiplier_out_ack)
+    );
+
 
 endmodule

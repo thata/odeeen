@@ -391,8 +391,36 @@ function [31:0] fsub_s(
 endfunction
 
 // fmul.s
+function [31:0] fmul_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fmul_s = {
+        7'b0001000, // funct7
+        rs2,
+        rs1,
+        3'b111, // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
 // fdiv.s
+function [31:0] fdiv_s(
+    input logic [4:0] rd,
+    input logic [4:0] rs1,
+    input logic [4:0] rs2
+);
+    fdiv_s = {
+        7'b0001100, // funct7
+        rs2,
+        rs1,
+        3'b111, // roundMode （既存の出力コードに合わせて 111 を入れておく）
+        rd,
+        7'b1010011 // opCode
+    };
+endfunction
 
 // fcvt.s.w
 // Floating-point Convert to Single from Word)
