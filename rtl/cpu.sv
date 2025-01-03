@@ -90,6 +90,7 @@ module cpu(
     logic [1:0] alu_in1_src;
     logic alu_in2_src;
     logic [3:0] alu_op;
+    logic [3:0] fpu_op;
     logic dc_mem_to_reg;
     logic branch;
     logic jump;
@@ -106,6 +107,7 @@ module cpu(
         .aluIn1Src(alu_in1_src),
         .aluIn2Src(alu_in2_src),
         .aluOp(alu_op),
+        .fpuOp(fpu_op),
         .memToReg(dc_mem_to_reg),
         .branch(branch),
         .jump(jump),
@@ -152,12 +154,10 @@ module cpu(
     // FPU
     //-------------------------------------
 
-    logic [3:0] fpu_op;
     logic [31:0] fpu_in1, fpu_in2, fpu_result;
     logic fpu_in1_stb, fpu_in2_stb, fpu_result_ack;
     logic fpu_in1_ack, fpu_in2_ack, fpu_result_stb;
 
-    assign fpu_op = 4'b0000; // fadd
     assign fpu_in1 = rf_read_data1;
     assign fpu_in2 = rf_read_data2;
 
@@ -330,6 +330,7 @@ module decoder(
     output logic [1:0] aluIn1Src,
     output logic aluIn2Src,
     output logic [3:0] aluOp,
+    output logic [3:0] fpuOp,
     output logic memToReg,
     output logic branch,
     output logic jump,
@@ -427,6 +428,12 @@ module decoder(
                                                   : 1'b0;  // 整数レジスタへ書き込み
 
     assign fpu = (opCode === 7'b1010011) ? 1'b1 : 1'b0;    // FPU を使う命令（RV32F R-type）
+
+    assign fpuOp = (funct7 === 7'b0000000) ? 4'b0000 : // fadd
+                   (funct7 === 7'b0000100) ? 4'b0001 : // fsub
+                   (funct7 === 7'b0001000) ? 4'b0010 : // fmul
+                   (funct7 === 7'b0001100) ? 4'b0011   // fdiv
+                                           : 4'bxxxx;
 
     // always @(*) begin
     //     $display("opCode %b", opCode);

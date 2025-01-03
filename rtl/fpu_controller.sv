@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 // FPU Controller
 //
-// code | operation
+// op   | operation
 // -----|----------
 // 0000 | fadd
 // 0001 | fsub
@@ -25,21 +25,31 @@ module fpu_controller(
     output out_stb,
     input out_ack
 );
-    // 入力セレクタ
-    assign adder_in1_stb = (op === 4'b0000) ? in1_stb : 1'b0;
-    assign adder_in2_stb = (op === 4'b0000) ? in2_stb : 1'b0;
-    assign adder_out_ack = (op === 4'b0000) ? out_ack : 1'b0;
 
+    //------------------------------------------------------------------------------
+    // 入力セレクタ
+    //------------------------------------------------------------------------------
+
+    // fsub の場合は、in2 の最上位ビットにある符号を反転して加算を行う
+    assign adder_in2 = (op === 4'b0001) ? {~in2[31], in2[30:0]} : in2;
+    assign adder_in1_stb = (op === 4'b0000 || op === 4'b0001) ? in1_stb : 1'b0;
+    assign adder_in2_stb = (op === 4'b0000 || op === 4'b0001) ? in1_stb : 1'b0;
+    assign adder_out_ack = (op === 4'b0000 || op === 4'b0001) ? out_ack : 1'b0;
+
+    //------------------------------------------------------------------------------
     // 出力セレクタ
-    assign in1_ack = (op === 4'b0000) ? adder_in1_ack : 1'bx;
-    assign in2_ack = (op === 4'b0000) ? adder_in2_ack : 1'bx;
-    assign out_stb = (op === 4'b0000) ? adder_out_stb : 1'bx;
-    assign out = (op === 4'b0000) ? adder_out : 32'bx;
+    //------------------------------------------------------------------------------
+
+    assign in1_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in1_ack : 1'bx;
+    assign in2_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in2_ack : 1'bx;
+    assign out_stb = (op === 4'b0000 || op === 4'b0001) ? adder_out_stb : 1'bx;
+    assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out : 32'bx;
 
     //------------------------------------------------------------------------------
     // Floating-point Adder
     //------------------------------------------------------------------------------
 
+    logic [31:0] adder_in2;
     logic adder_in1_stb; // in1 が有効になったらアサートする
     logic adder_in2_stb; // in2 が有効になったらアサートする
     logic adder_in1_ack; // 受け手側で in1 の読み込みが終わったらアサートされる
@@ -54,7 +64,7 @@ module fpu_controller(
         .input_a(in1),
         .input_a_stb(adder_in1_stb),
         .input_a_ack(adder_in1_ack),
-        .input_b(in2),
+        .input_b(adder_in2),
         .input_b_stb(adder_in2_stb),
         .input_b_ack(adder_in2_ack),
         .output_z(adder_out),
