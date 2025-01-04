@@ -51,7 +51,34 @@ instructions[27] = fsw(0, 6, 32'h134);    // M[0x134] = f6
 instructions[28] = fsgnjn_s(7, 5, 5);     // f7 = -f5
 instructions[29] = fsw(0, 7, 32'h138);    // M[0x138] = f7
 
-instructions[30] = jal(0, 0);             // 無限ループ
+// FEQ 系のテスト
+// f5 = 2.0
+// f6 = 3.0
+// x5 = feq(f5, f6) // 0
+// x5 = feq(f5, f5) // 1
+// x5 = flt(f5, f6) // 1
+// x5 = flt(f6, f5) // 0
+// x5 = fle(f5, f6) // 1
+// x5 = fle(f6, f5) // 0
+// x5 = fle(f5, f5) // 1
+instructions[30] = flw(5, 0, 32'h104);    // f5 = 2.0
+instructions[31] = flw(6, 0, 32'h108);    // f6 = 3.0
+instructions[32] = feq_s(7, 5, 6);        // x7 = (f5 == f6) ? 1 : 0
+instructions[33] = sw(0, 7, 32'h13c);     // M[0x13c] = x7 (== 0)
+instructions[34] = feq_s(7, 5, 5);        // x7 = (f5 == f5) ? 1 : 0
+instructions[35] = sw(0, 7, 32'h140);     // M[0x140] = x7 (== 1)
+instructions[36] = flt_s(7, 5, 6);        // x7 = (f5 < f6) ? 1 : 0
+instructions[37] = sw(0, 7, 32'h144);     // M[0x144] = x7 (== 1)
+instructions[38] = flt_s(7, 6, 5);        // x7 = (f6 < f5) ? 1 : 0
+instructions[39] = sw(0, 7, 32'h148);     // M[0x148] = x7 (== 0)
+instructions[40] = fle_s(7, 5, 6);        // x7 = (f5 <= f6) ? 1 : 0
+instructions[41] = sw(0, 7, 32'h14c);     // M[0x14c] = x7 (== 1)
+instructions[42] = fle_s(7, 6, 5);        // x7 = (f6 <= f5) ? 1 : 0
+instructions[43] = sw(0, 7, 32'h150);     // M[0x150] = x7 (== 0)
+instructions[44] = fle_s(7, 5, 5);        // x7 = (f5 <= f5) ? 1 : 0
+instructions[45] = sw(0, 7, 32'h154);     // M[0x154] = x7 (== 1)
+
+instructions[46] = jal(0, 0);             // 無限ループ
 
 // テスト用の浮動小数点数データ
 instructions[64] = 32'h3f800000;        // M[0x100] = 1.0
@@ -90,7 +117,7 @@ reset_n = 0;
 reset_n = 1;
 #10;
 
-#10000;
+#20000;
 
 // 実行が終わった頃合いを見て、メモリの内容を確認
 mem_monitor_on = 1;
@@ -212,6 +239,95 @@ mem_monitor_wstrb_reg = 4'b0000;
 wait(mem_ready);
 assert(
     mem_rdata === 32'hc0400000 // -3.0
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+// FEQ
+// (2.0 == 3.0) #=> 0
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h13c;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h0
+) $display("PASSED"); else $display("@FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h140;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h1
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h144;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h1
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h148;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h0
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h14c;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h1
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+// (3.0 <= 2.0) #=> 0
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h150;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h0
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+// (2.0 <= 2.0) #=> 1
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h154;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h1
 ) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;

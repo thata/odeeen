@@ -61,6 +61,9 @@ module fpu_controller(
                      (op === 4'b0101)                   ? float2int_in1_ack :
                      (op === 4'b0110)                   ? fsgnj_in1_ack :
                      (op === 4'b0111)                   ? fsgnjn_in1_ack :
+                     (op === 4'b1000)                   ? feq_in1_ack :
+                     (op === 4'b1001)                   ? flt_in1_ack :
+                     (op === 4'b1010)                   ? fle_in1_ack :
                      (op === 4'b0010)                   ? multiplier_in1_ack :
                      (op === 4'b0011)                   ? divider_in1_ack
                                                         : 1'bx;
@@ -69,6 +72,9 @@ module fpu_controller(
                      (op === 4'b0101)                   ? float2int_in1_ack :
                      (op === 4'b0110)                   ? fsgnj_in2_ack :
                      (op === 4'b0111)                   ? fsgnjn_in2_ack :
+                     (op === 4'b1000)                   ? feq_in2_ack :
+                     (op === 4'b1001)                   ? flt_in2_ack :
+                     (op === 4'b1010)                   ? fle_in2_ack :
                      (op === 4'b0010)                   ? multiplier_in2_ack :
                      (op === 4'b0011)                   ? divider_in2_ack
                                                         :1'bx;
@@ -77,6 +83,9 @@ module fpu_controller(
                      (op === 4'b0101)                   ? float2int_out_stb :
                      (op === 4'b0110)                   ? fsgnj_out_stb :
                      (op === 4'b0111)                   ? fsgnjn_out_stb :
+                     (op === 4'b1000)                   ? feq_out_stb :
+                     (op === 4'b1001)                   ? flt_out_stb :
+                     (op === 4'b1010)                   ? fle_out_stb :
                      (op === 4'b0010)                   ? multiplier_out_stb :
                      (op === 4'b0011)                   ? divider_out_stb
                                                         : 1'bx;
@@ -85,6 +94,9 @@ module fpu_controller(
                  (op === 4'b0101)                   ? float2int_out :
                  (op === 4'b0110)                   ? fsgnj_out :
                  (op === 4'b0111)                   ? fsgnjn_out :
+                 (op === 4'b1000)                   ? feq_out :
+                 (op === 4'b1001)                   ? flt_out :
+                 (op === 4'b1010)                   ? fle_out :
                  (op === 4'b0010)                   ? multiplier_out :
                  (op === 4'b0011)                   ? divider_out
                                                     : 32'bx;
@@ -237,5 +249,71 @@ module fpu_controller(
     assign fsgnjn_in1_ack = 1'b1;
     assign fsgnjn_in2_ack = 1'b1;
     assign fsgnjn_out_stb = 1'b1;
+
+    //------------------------------------------------------------------------------
+    // 浮動小数点数比較演算（FEQ, FLT, FLE）
+    //------------------------------------------------------------------------------
+
+    logic fp_sign1;
+    logic fp_sign2;
+    logic [7:0] fp_exp1;
+    logic [7:0] fp_exp2;
+    logic [22:0] fp_frac1;
+    logic [22:0] fp_frac2;
+
+    assign fp_sign1 = in1[31];
+    assign fp_sign2 = in2[31];
+    assign fp_exp1 = in1[30:23];
+    assign fp_exp2 = in2[30:23];
+    assign fp_frac1 = in1[22:0];
+    assign fp_frac2 = in2[22:0];
+
+    // FEQ
+    // NOTE: 雑に実装しているので、NaN などの特殊なケースは考慮していない
+    logic [31:0] feq_out;
+    logic feq_in1_ack;
+    logic feq_in2_ack;
+    logic feq_out_stb;
+
+    assign feq_out = (fp_sign1 === fp_sign2 && fp_exp1 === fp_exp2 && fp_frac1 === fp_frac2) ? 32'h00000001 : 32'h00000000;
+    assign feq_in1_ack = 1'b1;
+    assign feq_in2_ack = 1'b1;
+    assign feq_out_stb = 1'b1;
+
+    // FLT
+    // NOTE: 雑に実装しているので、NaN などの特殊なケースは考慮していない
+    logic [31:0] flt_out;
+    logic flt_in1_ack;
+    logic flt_in2_ack;
+    logic flt_out_stb;
+
+    assign flt_out = (fp_sign1 === fp_sign2 && fp_exp1 === fp_exp2 && fp_frac1 === fp_frac2)          ? 32'h00000000 :
+                     (fp_sign1 === 1 && fp_sign2 === 0)                                               ? 32'h00000001 :
+                     (fp_sign1 === 0 && fp_sign2 === 1)                                               ? 32'h00000000 :
+                     (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 < fp_exp2)                          ? 32'h00000001 :
+                     (fp_sign1 === 1 && fp_sign2 === 1 && fp_exp1 > fp_exp2)                          ? 32'h00000000 :
+                     (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 === fp_exp2 && fp_frac1 < fp_frac2) ? 32'h00000001
+                                                                                                      : 32'h00000000;
+    assign flt_in1_ack = 1'b1;
+    assign flt_in2_ack = 1'b1;
+    assign flt_out_stb = 1'b1;
+
+    // FLE
+    // NOTE: 雑に実装しているので、NaN などの特殊なケースは考慮していない
+    logic [31:0] fle_out;
+    logic fle_in1_ack;
+    logic fle_in2_ack;
+    logic fle_out_stb;
+
+    assign fle_out = (fp_sign1 === fp_sign2 && fp_exp1 === fp_exp2 && fp_frac1 === fp_frac2)          ? 32'h00000001 :
+                     (fp_sign1 === 1 && fp_sign2 === 0)                                               ? 32'h00000001 :
+                     (fp_sign1 === 0 && fp_sign2 === 1)                                               ? 32'h00000000 :
+                     (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 < fp_exp2)                          ? 32'h00000001 :
+                     (fp_sign1 === 1 && fp_sign2 === 1 && fp_exp1 > fp_exp2)                          ? 32'h00000000 :
+                     (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 === fp_exp2 && fp_frac1 < fp_frac2) ? 32'h00000001
+                                                                                                      : 32'h00000000;
+    assign fle_in1_ack = 1'b1;
+    assign fle_in2_ack = 1'b1;
+    assign fle_out_stb = 1'b1;
 
 endmodule

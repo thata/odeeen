@@ -420,6 +420,8 @@ module decoder(
     //   readRegType1 は 0 で、writeRegType は 1 になる
     // fcvt.w.s (float to int) の場合（opCode = 1010011, funct7 = 1100000）
     //   readRegType1 は 1 で、writeRegType は 0 になる
+    // feq, flt, fle の場合（opCode = 1010011, funct7 = 1010000）
+    //   writeRegType は 0 になる
 
     assign readRegType1 = (opCode === 7'b1010011 && funct7 === 7'b1101000) ? 1'b0 : // 整数レジスタを参照 (fcvt.s.w = int to float)
                           (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照 (fcvt.s.w 以外の RV32F の R-type 命令)
@@ -431,6 +433,7 @@ module decoder(
 
     assign writeRegType = (opCode === 7'b0000111)                          ? 1'b1 : // 浮動小数点レジスタへ書き込み (flw)
                           (opCode === 7'b1010011 && funct7 === 7'b1100000) ? 1'b0 : // 整数レジスタへ書き込み (fcvt.w.s = float to int)
+                          (opCode === 7'b1010011 && funct7 === 7'b1010000) ? 1'b0 : // 整数レジスタへ書き込み (feq, flt, fle)
                           (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
                                                                            : 1'b0;  // 整数レジスタへ書き込み
 
@@ -441,6 +444,9 @@ module decoder(
                    (funct7 === 7'b1100000)                      ? 4'b0101 : // fcvt.w.s (float to int)
                    (funct7 === 7'b0010000 && funct3 === 3'b000) ? 4'b0110 : // fsgnj
                    (funct7 === 7'b0010000 && funct3 === 3'b001) ? 4'b0111 : // fsgnjn
+                   (funct7 === 7'b1010000 && funct3 === 3'b010) ? 4'b1000 : // feq
+                   (funct7 === 7'b1010000 && funct3 === 3'b001) ? 4'b1001 : // flt
+                   (funct7 === 7'b1010000 && funct3 === 3'b000) ? 4'b1010 : // fle
                    (funct7 === 7'b0000100)                      ? 4'b0001 : // fsub
                    (funct7 === 7'b0001000)                      ? 4'b0010 : // fmul
                    (funct7 === 7'b0001100)                      ? 4'b0011   // fdiv
@@ -692,7 +698,7 @@ module regfile(
         // $display("x1 %d", registers[1]);
         // $display("x2 %d", registers[2]);
         // $display("x3 %d", registers[3]);
-        // $display("x5 %d", registers[5]);
+        // $display("x7 %d", registers[5]);
         // $display("x10 %d", registers[10]);
         // $display("$2 %b", registers[2]);
         // $display("$30 %b", registers[30]);
