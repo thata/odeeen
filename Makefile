@@ -19,8 +19,8 @@ ulx3s.bit: ulx3s_out.config firmware/firmware.hex
 ulx3s_out.config: odeeen.json
 	nextpnr-ecp5 --85k --json odeeen.json --lpf rtl/ulx3s_v20.lpf --textcfg ulx3s_out.config
 
-odeeen.json: rtl/cpu.sv rtl/ulx3s_top.sv rtl/bram_controller.sv rtl/sdram.v rtl/uart.v firmware/firmware_seed.hex
-	yosys -p "hierarchy -top ulx3s_top" -p "synth_ecp5 -json odeeen.json" rtl/cpu.sv rtl/bram_controller.sv rtl/sdram.v rtl/ulx3s_top.sv rtl/uart.v
+odeeen.json: rtl/cpu.sv rtl/ulx3s_top.sv rtl/bram_controller.sv rtl/sdram.v rtl/uart.v rtl/fpu_controller.sv rtl/fpu/float_to_int/float_to_int.v rtl/fpu/int_to_float/int_to_float.v rtl/fpu/divider/divider.v rtl/fpu/multiplier/multiplier.v rtl/fpu/adder/adder.v firmware/firmware_seed.hex
+	yosys -p "hierarchy -top ulx3s_top" -p "synth_ecp5 -json odeeen.json" rtl/cpu.sv rtl/bram_controller.sv rtl/fpu_controller.sv rtl/fpu/float_to_int/float_to_int.v rtl/fpu/int_to_float/int_to_float.v rtl/fpu/divider/divider.v rtl/fpu/multiplier/multiplier.v rtl/fpu/adder/adder.v rtl/sdram.v rtl/ulx3s_top.sv rtl/uart.v
 
 prog: ulx3s.bit
 	fujprog -j SRAM ulx3s.bit
@@ -52,10 +52,10 @@ firmware/firmware.hex:
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
-FIRMWARE_TARGET = test/fib
+FIRMWARE_TARGET = test/pi
 firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
-	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Ttext=0x00000000 -Tdata=0x40000000 firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
+	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 firmware: firmware/firmware.hex
