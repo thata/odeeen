@@ -436,13 +436,15 @@ module decoder(
 
     assign fpu = (opCode === 7'b1010011) ? 1'b1 : 1'b0;    // FPU を使う命令（RV32F R-type）
 
-    assign fpuOp = (funct7 === 7'b0000000) ? 4'b0000 : // fadd
-                   (funct7 === 7'b1101000) ? 4'b0100 : // fcvt.s.w (int to float)
-                   (funct7 === 7'b1100000) ? 4'b0101 : // fcvt.w.s (float to int)
-                   (funct7 === 7'b0000100) ? 4'b0001 : // fsub
-                   (funct7 === 7'b0001000) ? 4'b0010 : // fmul
-                   (funct7 === 7'b0001100) ? 4'b0011   // fdiv
-                                           : 4'bxxxx;
+    assign fpuOp = (funct7 === 7'b0000000)                      ? 4'b0000 : // fadd
+                   (funct7 === 7'b1101000)                      ? 4'b0100 : // fcvt.s.w (int to float)
+                   (funct7 === 7'b1100000)                      ? 4'b0101 : // fcvt.w.s (float to int)
+                   (funct7 === 7'b0010000 && funct3 === 3'b000) ? 4'b0110 : // fsgnj
+                   (funct7 === 7'b0010000 && funct3 === 3'b001) ? 4'b0111 : // fsgnjn
+                   (funct7 === 7'b0000100)                      ? 4'b0001 : // fsub
+                   (funct7 === 7'b0001000)                      ? 4'b0010 : // fmul
+                   (funct7 === 7'b0001100)                      ? 4'b0011   // fdiv
+                                                                : 4'bxxxx;
 
     // always @(*) begin
     //     $display("opCode %b", opCode);

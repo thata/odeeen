@@ -41,7 +41,17 @@ instructions[22] = sw(0, 6, 32'h12c);     // M[0x12c] = x6
 instructions[23] = fcvt_s_w(7, 6);        // f7 = (float)x6
 instructions[24] = fsw(0, 7, 32'h130);    // M[0x130] = f7
 
-instructions[25] = jal(0, 0);             // 無限ループ
+// FSGNJ系のテスト
+// f5 = 3.0
+// f6 = fsgnj(f6, f5, f5) // f6 = f5
+// f7 = fsgnjn(f7, f5, f5) // f7 = -f5
+instructions[25] = flw(5, 0, 32'h108);    // f5 = 3.0
+instructions[26] = fsgnj_s(6, 5, 5);      // f6 = f5
+instructions[27] = fsw(0, 6, 32'h134);    // M[0x134] = f6
+instructions[28] = fsgnjn_s(7, 5, 5);     // f7 = -f5
+instructions[29] = fsw(0, 7, 32'h138);    // M[0x138] = f7
+
+instructions[30] = jal(0, 0);             // 無限ループ
 
 // テスト用の浮動小数点数データ
 instructions[64] = 32'h3f800000;        // M[0x100] = 1.0
@@ -80,7 +90,7 @@ reset_n = 0;
 reset_n = 1;
 #10;
 
-#5000;
+#10000;
 
 // 実行が終わった頃合いを見て、メモリの内容を確認
 mem_monitor_on = 1;
@@ -178,6 +188,30 @@ mem_monitor_wstrb_reg = 4'b0000;
 wait(mem_ready);
 assert(
     mem_rdata === 32'h40400000
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h134;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h40400000 // 3.0
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h138;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'hc0400000 // -3.0
 ) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;

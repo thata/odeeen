@@ -9,9 +9,11 @@
 // 0011 | fdiv
 // 0100 | fcvt.s.w (int to float)
 // 0101 | fcvt.w.s (float to int)
-// 0110 | feq
-// 0111 | flt
-// 1000 | fle
+// 0110 | fsgnj
+// 0111 | fsgnjn
+// 1000 | feq
+// 1001 | flt
+// 1010 | fle
 //------------------------------------------------------------------------------
 
 module fpu_controller(
@@ -57,24 +59,32 @@ module fpu_controller(
     assign in1_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in1_ack :
                      (op === 4'b0100)                   ? int2float_in1_ack :
                      (op === 4'b0101)                   ? float2int_in1_ack :
+                     (op === 4'b0110)                   ? fsgnj_in1_ack :
+                     (op === 4'b0111)                   ? fsgnjn_in1_ack :
                      (op === 4'b0010)                   ? multiplier_in1_ack :
                      (op === 4'b0011)                   ? divider_in1_ack
                                                         : 1'bx;
     assign in2_ack = (op === 4'b0000 || op === 4'b0001) ? adder_in2_ack :
                      (op === 4'b0100)                   ? int2float_in1_ack :
                      (op === 4'b0101)                   ? float2int_in1_ack :
+                     (op === 4'b0110)                   ? fsgnj_in2_ack :
+                     (op === 4'b0111)                   ? fsgnjn_in2_ack :
                      (op === 4'b0010)                   ? multiplier_in2_ack :
                      (op === 4'b0011)                   ? divider_in2_ack
                                                         :1'bx;
     assign out_stb = (op === 4'b0000 || op === 4'b0001) ? adder_out_stb :
                      (op === 4'b0100)                   ? int2float_out_stb :
                      (op === 4'b0101)                   ? float2int_out_stb :
+                     (op === 4'b0110)                   ? fsgnj_out_stb :
+                     (op === 4'b0111)                   ? fsgnjn_out_stb :
                      (op === 4'b0010)                   ? multiplier_out_stb :
                      (op === 4'b0011)                   ? divider_out_stb
                                                         : 1'bx;
     assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out :
                  (op === 4'b0100)                   ? int2float_out :
                  (op === 4'b0101)                   ? float2int_out :
+                 (op === 4'b0110)                   ? fsgnj_out :
+                 (op === 4'b0111)                   ? fsgnjn_out :
                  (op === 4'b0010)                   ? multiplier_out :
                  (op === 4'b0011)                   ? divider_out
                                                     : 32'bx;
@@ -199,5 +209,33 @@ module fpu_controller(
         .output_z_stb(float2int_out_stb),
         .output_z_ack(float2int_out_ack)
     );
+
+    //------------------------------------------------------------------------------
+    // 符号インジェクト
+    //------------------------------------------------------------------------------
+
+    // fsgnj: 「in2 の符号部 + in1 の指数部 + in1 の仮数部」を返す
+    logic [31:0] fsgnj_out;
+    logic fsgnj_in1_ack;
+    logic fsgnj_in2_ack;
+    logic fsgnj_out_stb;
+
+    assign fsgnj_out = {in2[31], in1[30:23], in1[22:0]};
+    // 常にアサートでもいいかな？
+    assign fsgnj_in1_ack = 1'b1;
+    assign fsgnj_in2_ack = 1'b1;
+    assign fsgnj_out_stb = 1'b1;
+
+    // fsgnjn: 「in2 の符号部の反転 + in1 の指数部 + in1 の仮数部」を返す
+    logic [31:0] fsgnjn_out;
+    logic fsgnjn_in1_ack;
+    logic fsgnjn_in2_ack;
+    logic fsgnjn_out_stb;
+
+    assign fsgnjn_out = {~in2[31], in1[30:23], in1[22:0]};
+    // 常にアサートでもいいかな？
+    assign fsgnjn_in1_ack = 1'b1;
+    assign fsgnjn_in2_ack = 1'b1;
+    assign fsgnjn_out_stb = 1'b1;
 
 endmodule
