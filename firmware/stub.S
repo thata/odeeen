@@ -19,5 +19,9 @@ _start:
     li a0, 0x4F000000
     li a1, 0x4E000000
     call min_caml_start
+
+    // 終了したら LED に 128 を出力
+    li a0, 128
+    sw a0, 0(tp)
 loop:
     j loop
