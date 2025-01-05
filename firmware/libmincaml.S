@@ -336,7 +336,15 @@ sleep_break:
     .text
     .globl min_caml_float_of_int
 min_caml_float_of_int:
+    // スタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
     fcvt.s.w fa0, a0
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
     ret
 
 //---------------------------------------------------------
@@ -349,9 +357,37 @@ min_caml_float_of_int:
     .text
     .globl min_caml_int_of_float
 min_caml_int_of_float:
+    // スタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
     fcvt.w.s a0, fa0
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
     ret
 
+//---------------------------------------------------------
+// truncate: 浮動小数点数を整数に変換(int_of_float のエイリアス)
+// fa0: 浮動小数点数
+// 戻り値: 整数
+//
+// fcvt.w.s 命令を利用して、浮動小数点数を整数に変換する
+//---------------------------------------------------------
+    .text
+    .globl min_caml_truncate
+min_caml_truncate:
+    // スタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
+    fcvt.w.s a0, fa0
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
+    ret
 
 //---------------------------------------------------------
 // 改行コードを出力
