@@ -11,13 +11,14 @@ min_caml_print_int:
     // 使用するレジスタ
     // s1: 出力する整数（作業用）
     // s2: 商
+    // s3: 出力する整数
 
     // レジスタをスタックへ退避
-    addi s10, s10, 12
+    addi s10, s10, 16
     sw ra, -12(s10)
     sw s1, -8(s10)
     sw s2, -4(s10)
-
+    sw s3, 0(s10)
 
     bgt a0, zero, min_caml_print_int_positive
 
@@ -28,8 +29,9 @@ min_caml_print_int_negative:
     li t1, 0xffffffff
     xor s1, s1, t1
 
-    // 出力する整数を、作業用レジスタ s1 にコピー
+    // 出力する整数を、作業用レジスタ s1 と s3 にコピー
     addi s1, s1, 1
+    mv s3, s1
 
     // "-" を出力
     li a0, '-'
@@ -38,75 +40,94 @@ min_caml_print_int_negative:
     j min_caml_print_int_main
 
 min_caml_print_int_positive:
-    // 出力する整数を、作業用レジスタ s1 にコピー
+    // 出力する整数を、作業用レジスタ s1 と s3 にコピー
     mv s1, a0
+    mv s3, s1
 
 min_caml_print_int_main:
 
     // 10ケタ目を出力
     mv a0, s1 // 割られる数
     li a1, 1000000000 // 割る数
+    blt s3, a1, min_caml_print_int_9 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 9ケタ目を出力
+min_caml_print_int_9:
     mv a0, s1 // 割られる数
     li a1, 100000000 // 割る数
+    blt s3, a1, min_caml_print_int_8 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 8ケタ目を出力
+min_caml_print_int_8:
     mv a0, s1 // 割られる数
     li a1, 10000000 // 割る数
+    blt s3, a1, min_caml_print_int_7 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 7ケタ目を出力
+min_caml_print_int_7:
     mv a0, s1 // 割られる数
     li a1, 1000000 // 割る数
+    blt s3, a1, min_caml_print_int_6 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 6ケタ目を出力
+min_caml_print_int_6:
     mv a0, s1 // 割られる数
     li a1, 100000 // 割る数
+    blt s3, a1, min_caml_print_int_5 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 5ケタ目を出力
+min_caml_print_int_5:
     mv a0, s1 // 割られる数
     li a1, 10000 // 割る数
+    blt s3, a1, min_caml_print_int_4 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 4ケタ目を出力
+min_caml_print_int_4:
     mv a0, s1 // 割られる数
     li a1, 1000 // 割る数
+    blt s3, a1, min_caml_print_int_3 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 3ケタ目を出力
+min_caml_print_int_3:
     mv a0, s1 // 割られる数
     li a1, 100 // 割る数
+    blt s3, a1, min_caml_print_int_2 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 2ケタ目を出力
+min_caml_print_int_2:
     mv a0, s1 // 割られる数
     li a1, 10 // 割る数
+    blt s3, a1, min_caml_print_int_1 // 「出力する整数 < 割る数」の場合、次の桁へ進む
     call div
     mv s1, a1 // 新しい割られる数
     call print_num
 
     // 1ケタ目を出力
+min_caml_print_int_1:
     li t1, '0'
     add t2, t1, s1 // 出力する文字
     mv a0, t2
@@ -116,7 +137,9 @@ min_caml_print_int_main:
     lw ra, -12(s10)
     lw s1, -8(s10)
     lw s2, -4(s10)
-    addi s10, s10, -12
+    lw s3, 0(s10)
+    addi s10, s10, -16
+
     ret
 
 // 1桁の数字を出力。ただし、0の場合は何も出力しない
@@ -124,18 +147,16 @@ min_caml_print_int_main:
 print_num:
     // レジスタをスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // メイン処理
-    beq a0, zero, print_num_break
     li t1, '0'
     add t2, t1, a0 // 出力する文字
     mv a0, t2
     call putc
 
-print_num_break:
     // レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -147,7 +168,7 @@ print_num_break:
 div:
     // レジスタをスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // メイン処理
     li t1, 0  // 商
@@ -173,7 +194,7 @@ div_break:
     mv a1, t2
 
     // レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -186,7 +207,7 @@ div_break:
 getc:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // 受信データが来るまで待機
     lw t0, UART_CTRL_OFFSET(gp)
@@ -197,7 +218,7 @@ getc_break:
     lw a0, UART_DATA_OFFSET(gp)
 
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -210,7 +231,7 @@ getc_break:
 putc:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // メイン処理
     sw a0, UART_DATA_OFFSET(gp)
@@ -224,7 +245,7 @@ putc_wait:
 
 putc_break:
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -236,7 +257,7 @@ putc_break:
 put_newline:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // 改行コードを出力
     li a0, '\n'
@@ -245,7 +266,7 @@ put_newline:
     call putc
 
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -256,7 +277,7 @@ put_newline:
 min_caml_clear_screen:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // 画面クリアのためのエスケープシーケンスを送信
     li a0, 27
@@ -277,7 +298,7 @@ min_caml_clear_screen:
     call putc
 
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -289,7 +310,7 @@ min_caml_clear_screen:
 sleep:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // メイン処理
     li t0, 0
@@ -301,7 +322,7 @@ sleep_loop:
 
 sleep_break:
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
 
@@ -339,7 +360,7 @@ min_caml_int_of_float:
 min_caml_print_newline:
     // ra をスタックへ退避
     addi s10, s10, 4
-    sw ra, -4(s10)
+    sw ra, 0(s10)
 
     // 改行コードを出力
     li a0, '\n'
@@ -348,6 +369,6 @@ min_caml_print_newline:
     call putc
 
     // ra レジスタの値を復元
-    lw ra, -4(s10)
+    lw ra, 0(s10)
     addi s10, s10, -4
     ret
