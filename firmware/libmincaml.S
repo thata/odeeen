@@ -20,7 +20,7 @@ min_caml_print_int:
     sw s2, -4(s10)
     sw s3, 0(s10)
 
-    bgt a0, zero, min_caml_print_int_positive
+    bge a0, zero, min_caml_print_int_positive
 
 min_caml_print_int_negative:
 
