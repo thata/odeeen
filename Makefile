@@ -44,6 +44,18 @@ test:
 	  rtl/cpu.sv \
 	  && ./a.out
 
+run: firmware
+	iverilog -g 2012 -s cpu_run -I rtl rtl/cpu_run.sv \
+	  rtl/bram_controller.sv \
+	  rtl/fpu/adder/adder.v \
+	  rtl/fpu/multiplier/multiplier.v \
+	  rtl/fpu/divider/divider.v \
+	  rtl/fpu/int_to_float/int_to_float.v \
+	  rtl/fpu/float_to_int/float_to_int.v \
+	  rtl/fpu_controller.sv \
+	  rtl/cpu.sv \
+	  && ./a.out
+
 firmware/firmware.hex:
 
 # FIRMWARE_TARGET = libmincaml_test.S
@@ -52,8 +64,8 @@ firmware/firmware.hex:
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
-FIRMWARE_TARGET = test/ack
-firmware/firmware.hex: firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
+FIRMWARE_TARGET = test/fib
+firmware/firmware.hex: Makefile firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
