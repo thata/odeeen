@@ -1,12 +1,12 @@
 all: sin.png cos.png atan.png
 
-sin.csv:
+sin.csv: sin.rb
 	ruby sin.rb
 
-cos.csv:
+cos.csv: cos.rb
 	ruby cos.rb
 
-atan.csv:
+atan.csv: atan.rb
 	ruby atan.rb
 
 sin.png: sin.csv
