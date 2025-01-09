@@ -80,6 +80,27 @@ let rec sqrt s =
   loop x last_x s
 in
 
+(* floor 関数 *)
+(*
+  floor(0.0) -> 0.0
+  floor(1.0) -> 1.0
+  floor(1.1) -> 1.0
+  floor(1.9) -> 1.0
+  floor(2.1) -> 2.0
+  floor(-1.0) -> -1.0
+  floor(-1.1) -> -2.0
+  floor(-1.9) -> -2.0
+*)
+let rec floor x =
+  if x >= 0.0 then
+    float_of_int (int_of_float x)
+  else
+    if x = float_of_int (int_of_float x) then
+      x
+    else
+      float_of_int (int_of_float (x -. 1.0))
+in
+
 (**************** ユーティリティー関数 ****************)
 (* データ構造へのアクセス関数 *)
 
