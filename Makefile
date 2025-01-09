@@ -64,7 +64,7 @@ firmware/firmware.hex:
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
-FIRMWARE_TARGET = test/matmul-flat
+FIRMWARE_TARGET = test/cos
 firmware/firmware.hex: Makefile firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
