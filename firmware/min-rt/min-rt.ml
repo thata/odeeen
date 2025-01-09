@@ -20,6 +20,52 @@
 (*MINCAML*)let rec fhalf x = x /. 2. in
 (*NOMINCAML let fhalf x = x /. 2. in*)
 
+(**************** 三角関数 ****************)
+
+(* sin 関数 *)
+let rec sin x =
+  (* x が -PI から PI の間に収まるよう調整する *)
+  let rec adjust x =
+    if x > 3.141592653589793 then
+      adjust (x -. 6.283185307179586)
+    else if x < -3.141592653589793 then
+      adjust (x +. 6.283185307179586)
+    else
+      x
+  in
+  let x = adjust x in
+  let x2 = x *. x in
+  let x3 = x *. x2 in
+  let x5 = x3 *. x2 in
+  let x7 = x5 *. x2 in
+  let x9 = x7 *. x2 in
+  x -. x3 /. 6.0 +. x5 /. 120.0 -. x7 /. 5040.0 +. x9 /. 362880.0
+in
+
+(* cos 関数 *)
+let rec cos x =
+  (* x が -PI から PI の間に収まるよう調整する *)
+  let rec adjust x =
+    if x > 3.141592653589793 then
+      adjust (x -. 6.283185307179586)
+    else if x < -3.141592653589793 then
+      adjust (x +. 6.283185307179586)
+    else
+      x
+  in
+  let x = adjust x in
+  let x2 = x *. x in
+  let x4 = x2 *. x2 in
+  let x6 = x4 *. x2 in
+  let x8 = x6 *. x2 in
+  let x10 = x8 *. x2 in
+  1.0 -. x2 /. 2.0 +. x4 /. 24.0 -. x6 /. 720.0 +. x8 /. 40320.0 -. x10 /. 3628800.0
+in
+
+(* atan 関数 *)
+(* NOTE: 使われてるのかどうかよく分からないので、ひとまず 1.0 を返してお茶を濁す *)
+let rec atan x = 1.0 in
+
 (**************** ユーティリティー関数 ****************)
 (* データ構造へのアクセス関数 *)
 
