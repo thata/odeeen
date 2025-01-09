@@ -67,6 +67,7 @@ in
 let rec atan x = 1.0 in
 
 (* 平方根 *)
+(* https://cpplover.blogspot.com/2010/11/blog-post_20.html *)
 let rec sqrt s =
   let x = s /. 2.0 in
   let last_x = 0.0 in
