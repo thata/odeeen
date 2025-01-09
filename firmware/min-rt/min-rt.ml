@@ -20,7 +20,7 @@
 (*MINCAML*)let rec fhalf x = x /. 2. in
 (*NOMINCAML let fhalf x = x /. 2. in*)
 
-(**************** 三角関数 ****************)
+(**************** 三角関数とか平方根とか ****************)
 
 (* sin 関数 *)
 let rec sin x =
@@ -65,6 +65,19 @@ in
 (* atan 関数 *)
 (* NOTE: 使われてるのかどうかよく分からないので、ひとまず 1.0 を返してお茶を濁す *)
 let rec atan x = 1.0 in
+
+(* 平方根 *)
+let rec sqrt s =
+  let x = s /. 2.0 in
+  let last_x = 0.0 in
+  let rec loop x last_x s =
+    if x = last_x then
+      x
+    else
+      loop ((x +. s /. x) /. 2.0) x s
+    in
+  loop x last_x s
+in
 
 (**************** ユーティリティー関数 ****************)
 (* データ構造へのアクセス関数 *)
