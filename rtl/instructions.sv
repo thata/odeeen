@@ -542,3 +542,37 @@ function [31:0] fle_s(
         7'b1010011 // opCode
     };
 endfunction
+
+// fmv.x.w
+// Floating-point Move Word to Integer Register
+// x[rd] = f[rs1]
+function [31:0] fmv_x_w(
+    input logic [4:0] rd,
+    input logic [4:0] rs1
+);
+    fmv_x_w = {
+        7'b1110000, // funct7
+        5'b00000,   // rs2 = 00000
+        rs1,
+        3'b000,     // funct3
+        rd,
+        7'b1010011  // opCode
+    };
+endfunction
+
+// fmv.w.x
+// Floating-point Move Word from Integer Register
+// f[rd] = x[rs1]
+function [31:0] fmv_w_x(
+    input logic [4:0] rd,
+    input logic [4:0] rs1
+);
+    fmv_w_x = {
+        7'b1111000, // funct7
+        5'b00000,   // rs2 = 00000
+        rs1,
+        3'b000,     // funct3
+        rd,
+        7'b1010011  // opCode
+    };
+endfunction
