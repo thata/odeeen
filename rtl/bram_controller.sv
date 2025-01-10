@@ -37,9 +37,7 @@ module bram_controller #(
     // logic [31:0] mem [0:131071]; // 512KB (~ 0x7FFFF)
     // logic [31:0] mem [0:32767]; // 128KB（~ 0x1FFFF）
     // logic [31:0] mem [0:16383]; // 64KB（~ 0x0FFFF）
-    logic [17:0] intnl_addr;
 
-    assign intnl_addr = mem_addr[17:0];
     assign mem_ready = (state_reg == STATE_SEND_READY) ? 1'b1 : 1'b0;
 
     initial begin
@@ -55,12 +53,12 @@ module bram_controller #(
             // メモリへの書き込み
             // NOTE: 現状は1ワードの書き込みのみに対応
             if (mem_wstrb == 4'b1111 && mem_valid) begin
-                mem[intnl_addr[17:2]] <= mem_wdata;
+                mem[mem_addr[17:2]] <= mem_wdata;
             end
 
             // メモリからの読み込み
             // NOTE: BRAM として推論させるため、クロックの立ち上がりで読み込みを行う
-            mem_rdata <= mem[intnl_addr[17:2]];
+            mem_rdata <= mem[mem_addr[17:2]];
         end
     end
 
