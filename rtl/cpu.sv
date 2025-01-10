@@ -92,6 +92,7 @@ module cpu(
     logic [3:0] alu_op;
     logic [3:0] fpu_op;
     logic dc_mem_to_reg;
+    logic dc_reg_to_reg;
     logic branch;
     logic jump;
     logic jump_reg;
@@ -109,6 +110,7 @@ module cpu(
         .aluOp(alu_op),
         .fpuOp(fpu_op),
         .memToReg(dc_mem_to_reg),
+        .regToReg(dc_reg_to_reg),
         .branch(branch),
         .jump(jump),
         .jumpReg(jump_reg),
@@ -207,6 +209,7 @@ module cpu(
     assign rf_addr3 = instr_reg[11:7];  // rd
     assign rf_we3 = (stage_reg == WB_STAGE) && dc_reg_write;
     assign rf_write_data3 = (dc_mem_to_reg) ? mem_rdata_reg :  // lw の場合
+                            (dc_reg_to_reg) ? rf_read_data1 :  // fmv.x.w, fmv.w.x の場合
                             (jump)          ? pc_reg + 4 :     // jal, jalr の場合
                             (fpu === 1'b1)  ? fpu_result_reg   // FPU の演算結果
                                             : alu_result;
@@ -332,6 +335,7 @@ module decoder(
     output logic [3:0] aluOp,
     output logic [3:0] fpuOp,
     output logic memToReg,
+    output logic regToReg,
     output logic branch,
     output logic jump,
     output logic jumpReg,
@@ -390,6 +394,10 @@ module decoder(
                       (opCode == 7'b0000111) ? 1'b1   // flw
                                              : 1'b0;
 
+    assign regToReg = (opCode == 7'b1010011 && funct7 == 7'b1110000) ? 1'b1 : // fmv.w.x
+                      (opCode == 7'b1010011 && funct7 == 7'b1111000) ? 1'b1   // fmv.x.w
+                                                                     : 1'b0;
+
     assign branch = (opCode === 7'b1100011) ? 1'b1 // B type
                                             : 1'b0;
 
@@ -422,8 +430,13 @@ module decoder(
     //   readRegType1 は 1 で、writeRegType は 0 になる
     // feq, flt, fle の場合（opCode = 1010011, funct7 = 1010000）
     //   writeRegType は 0 になる
+    // fmv.w.x (f[rd] = x[rs1]) の場合（opCode = 1010011, funct7 = 1111000）
+    //   readRegType1 は 0（整数レジスタ） で、writeRegType は 1（浮動小数点レジスタ） になる
+    // fmv.x.w (x[rd] = f[rs1]) の場合（opCode = 1010011, funct7 = 1110000）
+    //   readRegType1 は 1（浮動小数点レジスタ） で、writeRegType は 0（整数レジスタ） になる
 
     assign readRegType1 = (opCode === 7'b1010011 && funct7 === 7'b1101000) ? 1'b0 : // 整数レジスタを参照 (fcvt.s.w = int to float)
+                          (opCode === 7'b1010011 && funct7 === 7'b1111000) ? 1'b0 : // 整数レジスタを参照 (fmv.w.x = f[rd] <- x[rs1])
                           (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照 (fcvt.s.w 以外の RV32F の R-type 命令)
                                                                            : 1'b0;  // 整数レジスタを参照
 
@@ -434,6 +447,7 @@ module decoder(
     assign writeRegType = (opCode === 7'b0000111)                          ? 1'b1 : // 浮動小数点レジスタへ書き込み (flw)
                           (opCode === 7'b1010011 && funct7 === 7'b1100000) ? 1'b0 : // 整数レジスタへ書き込み (fcvt.w.s = float to int)
                           (opCode === 7'b1010011 && funct7 === 7'b1010000) ? 1'b0 : // 整数レジスタへ書き込み (feq, flt, fle)
+                          (opCode === 7'b1010011 && funct7 === 7'b1110000) ? 1'b0 : // 整数レジスタへ書き込み (fmv.x.w)
                           (opCode === 7'b1010011)                          ? 1'b1   // 浮動小数点レジスタを参照（RV32F の R type）
                                                                            : 1'b0;  // 整数レジスタへ書き込み
 

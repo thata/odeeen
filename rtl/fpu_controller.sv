@@ -88,7 +88,7 @@ module fpu_controller(
                      (op === 4'b1010)                   ? fle_out_stb :
                      (op === 4'b0010)                   ? multiplier_out_stb :
                      (op === 4'b0011)                   ? divider_out_stb
-                                                        : 1'bx;
+                                                        : 1'b1; // 該当しない場合は、すぐにアサートしても良いかもしれない
     assign out = (op === 4'b0000 || op === 4'b0001) ? adder_out :
                  (op === 4'b0100)                   ? int2float_out :
                  (op === 4'b0101)                   ? float2int_out :

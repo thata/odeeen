@@ -4,10 +4,10 @@
 
 /* instruction[0]からinstruction[63]までの命令がメモリに書き込まれる */
 
-// FDIV.S のテスト
+// FMV 系のテスト
 instructions[0] = flw(5, 0, 32'h108);    // f5 = 3.0
-instructions[1] = flw(6, 0, 32'h104);    // f6 = 2.0
-instructions[2] = fdiv_s(7, 5, 6);       // f7 = f5 / f6
+instructions[1] = fmv_x_w(6, 5);         // x6 = f5
+instructions[2] = fmv_w_x(7, 6);         // f7 = x6
 instructions[3] = fsw(0, 7, 32'h110);    // M[0x110] = f7
 
 // FADD.S のテスト (1.0 + 2.0)
@@ -78,7 +78,13 @@ instructions[43] = sw(0, 7, 32'h150);     // M[0x150] = x7 (== 0)
 instructions[44] = fle_s(7, 5, 5);        // x7 = (f5 <= f5) ? 1 : 0
 instructions[45] = sw(0, 7, 32'h154);     // M[0x154] = x7 (== 1)
 
-instructions[46] = jal(0, 0);             // 無限ループ
+// FDIV.S のテスト
+instructions[46] = flw(5, 0, 32'h108);    // f5 = 3.0
+instructions[47] = flw(6, 0, 32'h104);    // f6 = 2.0
+instructions[48] = fdiv_s(7, 5, 6);       // f7 = f5 / f6
+instructions[49] = fsw(0, 7, 32'h158);    // M[0x158] = f7
+
+instructions[50] = jal(0, 0);             // 無限ループ
 
 // テスト用の浮動小数点数データ
 instructions[64] = 32'h3f800000;        // M[0x100] = 1.0
@@ -127,7 +133,7 @@ mem_monitor_wstrb_reg = 4'b0000;
 #10;
 wait(mem_ready);
 assert(
-    mem_rdata === 32'h3fc00000 // 1.5
+    mem_rdata === 32'h40400000 // 3.0
 ) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
@@ -253,7 +259,7 @@ mem_monitor_wstrb_reg = 4'b0000;
 wait(mem_ready);
 assert(
     mem_rdata === 32'h0
-) $display("PASSED"); else $display("@FAILED: %h", mem_rdata);
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
 
@@ -328,6 +334,18 @@ mem_monitor_wstrb_reg = 4'b0000;
 wait(mem_ready);
 assert(
     mem_rdata === 32'h1
+) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
+mem_monitor_valid_reg = 0;
+#10;
+
+mem_monitor_on = 1;
+mem_monitor_valid_reg = 1;
+mem_monitor_addr_reg = 32'h158;
+mem_monitor_wstrb_reg = 4'b0000;
+#10;
+wait(mem_ready);
+assert(
+    mem_rdata === 32'h3fc00000 // 1.5
 ) $display("PASSED"); else $display("FAILED: %h", mem_rdata);
 mem_monitor_valid_reg = 0;
 #10;
