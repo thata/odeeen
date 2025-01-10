@@ -450,12 +450,19 @@ min_caml_print_newline:
     ret
 
 //---------------------------------------------------------
-// min_caml_abs_float (float -> float)
+// min_caml_abs_float: 絶対値を返す
+// (float -> float)
 //---------------------------------------------------------
     .text
     .globl min_caml_abs_float
 min_caml_abs_float:
-    // TODO: あとで実装する
+    // t1 = fa0
+    fmv.x.w t1, fa0
+    // 符号ビットに0（正）をセット
+    li t2, 0x7fffffff
+    and t1, t1, t2
+    // fa0 = t1
+    fmv.w.x fa0, t1
     ret
 
 //---------------------------------------------------------
