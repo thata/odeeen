@@ -489,5 +489,14 @@ min_caml_read_int:
     .text
     .globl min_caml_print_byte
 min_caml_print_byte:
-    // TODO: あとで実装する
+    // ra をスタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
+    // メイン処理
+    call putc
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
     ret
