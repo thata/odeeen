@@ -466,13 +466,31 @@ min_caml_abs_float:
     ret
 
 //---------------------------------------------------------
-// min_caml_read_float (void -> float)
+// min_caml_read_byte (void -> int)
 //---------------------------------------------------------
     .text
-    .globl min_caml_read_float
-min_caml_read_float:
-    // TODO: あとで実装する
+    .globl min_caml_read_byte
+min_caml_read_byte:
+    // ra をスタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
+    // メイン処理
+    call getc
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
     ret
+
+//---------------------------------------------------------
+// min_caml_read_float (void -> float)
+//---------------------------------------------------------
+//     .text
+//     .globl min_caml_read_float
+// min_caml_read_float:
+//     // TODO: あとで実装する
+//     ret
 
 //---------------------------------------------------------
 // min_caml_read_int (void -> int)
