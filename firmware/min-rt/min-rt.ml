@@ -136,6 +136,7 @@ let rec read_float _ =
       (* 数字以外が来たら、パースを終える *)
       acc
   in
+  let c = read_byte () in
   if c = 32 then
     (* 空白の場合、次のトークン取得へ *)
     read_float ()
@@ -1451,3 +1452,5 @@ in
 in
 
 rt 128 128 false
+(* print_int (read_int ());
+print_newline () *)

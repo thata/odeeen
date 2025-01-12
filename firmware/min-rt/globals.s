@@ -1,5 +1,5 @@
         .data
-        .align 3
+        .align 4
         .global min_caml_objects
 min_caml_objects:
         .space 480

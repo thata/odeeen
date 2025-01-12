@@ -70,6 +70,13 @@ firmware/firmware.hex: Makefile firmware/$(FIRMWARE_TARGET).ml firmware/libminca
 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
+# min-rt をビルド
+# firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/libmincaml.S firmware/stub.S
+# 	firmware/bin/min-caml firmware/min-rt/min-rt
+# 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/min-rt/min-rt.s firmware/libmincaml.S firmware/min-rt/globals.s -o firmware/firmware.elf
+# 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+
+
 firmware: firmware/firmware.hex
 
 clean-firmware:
