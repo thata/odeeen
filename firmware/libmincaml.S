@@ -466,6 +466,24 @@ min_caml_abs_float:
     ret
 
 //---------------------------------------------------------
+// min_caml_print_byte (int -> void)
+//---------------------------------------------------------
+    .text
+    .globl min_caml_print_byte
+min_caml_print_byte:
+    // ra をスタックへ退避
+    addi s10, s10, 4
+    sw ra, 0(s10)
+
+    // メイン処理
+    call putc
+
+    // ra レジスタの値を復元
+    lw ra, 0(s10)
+    addi s10, s10, -4
+    ret
+
+//---------------------------------------------------------
 // min_caml_read_byte (void -> int)
 //---------------------------------------------------------
     .text
@@ -484,19 +502,68 @@ min_caml_read_byte:
     ret
 
 //---------------------------------------------------------
-// min_caml_print_byte (int -> void)
+// 添付データから1バイト読み込み
 //---------------------------------------------------------
     .text
-    .globl min_caml_print_byte
-min_caml_print_byte:
+    .globl min_caml_read_byte2
+min_caml_read_byte2:
     // ra をスタックへ退避
     addi s10, s10, 4
     sw ra, 0(s10)
 
-    // メイン処理
-    call putc
+    // SLD データインデックスを読み込み
+    la t0, sld_data_index
+    lw t1, 0(t0)
+
+    // SLD データを読み込み
+    la t0, sld_data
+    add t0, t0, t1
+    lw a0, 0(t0)
+
+    // SLD データインデックスをインクリメント
+    la t0, sld_data_index
+    lw t1, 0(t0)
+    addi t1, t1, 4
+    sw t1, 0(t0)
 
     // ra レジスタの値を復元
     lw ra, 0(s10)
     addi s10, s10, -4
+    ret
+
+//---------------------------------------------------------
+// 添付データ
+//
+// 0.0 0.0 -100.0      0.0 0.0
+// 1 0.0 0.0
+// 255.0
+// 0 3 1 0  50.0 50.0 50.0  0.0 0.0 0.0  1.0 1.0 250.0  255.0 0.0 0.0
+//
+// -1
+//
+// 0 -1
+// -1
+//
+// 99 0 -1
+// -1
+//---------------------------------------------------------
+    .text
+    .align 4
+    .globl sld_data
+sld_data:
+    .word 49
+    .word 50
+    .word 48
+    .word 48
+sld_data_index:
+    .int 0
+
+//---------------------------------------------------------
+// SLD インデックスの初期化
+//---------------------------------------------------------
+    .text
+    .globl min_caml_init_sld_data_index
+min_caml_init_sld_data_index:
+    la t0, sld_data_index
+    sw zero, 0(t0)
     ret

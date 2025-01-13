@@ -13,6 +13,8 @@ _start:
     // ヒープポインタの開始アドレス (0x4E000000 ~ 0x4EFFFFFF)
     li s11, 0x4E000000
 
+    call min_caml_init_sld_data_index
+
     // call min_caml_clear_screen
 
     // スタックポインタのアドレスとヒープポインタのアドレスを引数に min_caml_start を呼び出す

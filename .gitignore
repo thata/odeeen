@@ -7,4 +7,5 @@ ulx3s_out_final.config
 firmware/*.o
 firmware/firmware.elf
 firmware/firmware.hex
+firmware/pre_firmware.hex
 firmware/firmware_seed.hex
