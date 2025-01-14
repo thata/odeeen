@@ -1,4 +1,5 @@
-        .data
+        # firmware.hex に変換する際に変な感じになるので、text セクションに入れている
+        .text
         .align 4
         .global min_caml_objects
 min_caml_objects:

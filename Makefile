@@ -63,8 +63,8 @@ firmware/firmware.hex:
 # 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
-# # MinCaml のプログラムをビルド
-# FIRMWARE_TARGET = test/read_attach_data
+# MinCaml のプログラムをビルド
+# FIRMWARE_TARGET = test/read_float_test
 # firmware/firmware.hex: Makefile firmware/$(FIRMWARE_TARGET).ml firmware/libmincaml.S firmware/stub.S
 # 	firmware/bin/min-caml firmware/${FIRMWARE_TARGET}
 # 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/${FIRMWARE_TARGET}.s firmware/libmincaml.S -o firmware/firmware.elf
@@ -76,6 +76,7 @@ firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/libmincaml.S 
 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/min-rt/min-rt.s firmware/libmincaml.S firmware/min-rt/globals.s -o firmware/firmware.elf
 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/pre_firmware.hex
 	cat firmware/pre_firmware.hex | grep -v "@" > firmware/firmware.hex
+#	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 firmware: firmware/firmware.hex
 

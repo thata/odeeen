@@ -9,7 +9,7 @@
 let rec read_float _ =
   (* 小数部分をパース *)
   let rec parse_fraction _ =
-    let c = read_byte () in
+    let c = read_byte2 () in
     if c >= 48 then
       if c <= 57 then
         (* 0 ~ 9 の場合 *)
@@ -24,7 +24,7 @@ let rec read_float _ =
   in
   (* 整数部分をパース *)
   let rec parse_float acc =
-    let c = read_byte () in
+    let c = read_byte2 () in
     if c = 46 then
       (* "." の場合、小数点部分を読み込む *)
       acc +. (parse_fraction () /. 10.0)
@@ -40,7 +40,7 @@ let rec read_float _ =
       (* 数字以外が来たら、パースを終える *)
       acc
   in
-  let c = read_byte () in
+  let c = read_byte2 () in
   if c = 32 then
     (* 空白の場合、次のトークン取得へ *)
     read_float ()
@@ -67,5 +67,69 @@ let rec read_float _ =
     (* エラーっぽい値を返しておく *)
     -11111.0
 in
-print_int (int_of_float (read_float () *. 1000.0));
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((read_float ()) *. 1000.0));
 print_newline ()
