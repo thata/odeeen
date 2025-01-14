@@ -1329,15 +1329,25 @@ in
   (
    let red = int_of_float rgb.(0) in
    let red = if red > 255 then 255 else red in
-   print_byte red;
+   (* P3 形式で出力 *)
+   print_int red;
+   print_byte 32;
+   (* print_byte red; *)
+
 
    let green = int_of_float rgb.(1) in
    let green = if green > 255 then 255 else green in
-   print_byte green;
+   (* P3 形式で出力 *)
+   print_int green;
+   print_byte 32;
+   (* print_byte green; *)
 
    let blue = int_of_float rgb.(2) in
    let blue = if blue > 255 then 255 else blue in
-   print_byte blue
+   (* P3 形式で出力 *)
+   print_int blue;
+   print_byte 32
+   (* print_byte blue *)
   )
 in
 
@@ -1348,7 +1358,8 @@ in
 
     (* print_byte がバグってるので、一次対応として P3 形式で出力する *)
     (* 48 = '0' *)
-    print_byte (48 + 6);
+    print_byte (48 + 3);
+    (* print_byte (48 + 6); *)
 
     print_byte 10;
     print_int size.(0);
@@ -1450,8 +1461,9 @@ in
     scan_start ()
   )
 in
-
+rt 40 40 false
 (* rt 128 128 false *)
+(*
 print_int (int_of_float ((read_float ()) *. 1000.0));
 print_newline ();
 print_int (int_of_float ((read_float ()) *. 1000.0));
@@ -1520,3 +1532,4 @@ print_int (int_of_float ((read_float ()) *. 1000.0));
 print_newline ();
 print_int 4649;
 print_newline ()
+*)
