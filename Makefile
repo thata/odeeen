@@ -71,12 +71,16 @@ firmware/firmware.hex:
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # min-rt をビルド
-firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/libmincaml.S firmware/stub.S
+firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/sld_data.s firmware/libmincaml.S firmware/stub.S
 	firmware/bin/min-caml firmware/min-rt/min-rt
 	riscv64-unknown-elf-gcc -nostdlib -march=rv32if -mabi=ilp32f -Wl,-Tfirmware/custom.ld firmware/stub.S firmware/min-rt/min-rt.s firmware/libmincaml.S firmware/min-rt/globals.s -o firmware/firmware.elf
 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/pre_firmware.hex
 	cat firmware/pre_firmware.hex | grep -v "@" > firmware/firmware.hex
 #	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
+
+SLD_FILE = firmware/min-rt/contest.sld
+firmware/sld_data.s: $(SLD_FILE) Makefile
+	ruby firmware/bin/sld2asm.rb $(SLD_FILE) > firmware/sld_data.s
 
 firmware: firmware/firmware.hex
 
