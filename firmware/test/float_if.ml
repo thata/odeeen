@@ -27,10 +27,16 @@ let rec test4 x y =
 let rec test5 x y =
   if x = y then 1 else 0
 in
-
+let rec test6 _ =
+  let c = -0.007 in
+  let d = -0.2 in
+  (* 負の値どうしの FLE.S がバグってた *)
+  if c < d then 1 else 0
+in
 test1 a a;
 test2 a b;
 test3 a b;
 test4 b a;
 print_int (test5 a a);
+print_int (test6 ()); (* => 0 が返って欲しい *)
 print_newline ()

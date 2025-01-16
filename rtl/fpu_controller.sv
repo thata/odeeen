@@ -309,7 +309,7 @@ module fpu_controller(
                      (fp_sign1 === 1 && fp_sign2 === 0)                                               ? 32'h00000001 :
                      (fp_sign1 === 0 && fp_sign2 === 1)                                               ? 32'h00000000 :
                      (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 < fp_exp2)                          ? 32'h00000001 :
-                     (fp_sign1 === 1 && fp_sign2 === 1 && fp_exp1 > fp_exp2)                          ? 32'h00000000 :
+                     (fp_sign1 === 1 && fp_sign2 === 1 && fp_exp1 > fp_exp2)                          ? 32'h00000001 :
                      (fp_sign1 === 0 && fp_sign2 === 0 && fp_exp1 === fp_exp2 && fp_frac1 < fp_frac2) ? 32'h00000001
                                                                                                       : 32'h00000000;
     assign fle_in1_ack = 1'b1;
