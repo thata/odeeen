@@ -78,7 +78,7 @@ firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/sld_data.s fi
 	cat firmware/pre_firmware.hex | grep -v "@" > firmware/firmware.hex
 #	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
-SLD_FILE = firmware/min-rt/contest.sld
+SLD_FILE = firmware/min-rt/ball.sld
 firmware/sld_data.s: $(SLD_FILE) Makefile
 	ruby firmware/bin/sld2asm.rb $(SLD_FILE) > firmware/sld_data.s
 
