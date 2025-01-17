@@ -58,9 +58,9 @@ run: firmware
 
 firmware/firmware.hex:
 
-# FIRMWARE_TARGET = libmincaml_test.S
+# FIRMWARE_TARGET = fle_test.S
 # firmware/firmware.hex: firmware/$(FIRMWARE_TARGET)
-# 	riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32 -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
+# 	riscv64-unknown-elf-gcc -march=rv32if -mabi=ilp32f -nostdlib -Wl,-Ttext=0x00000000 $< -o firmware/firmware.elf
 # 	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
 # MinCaml のプログラムをビルド
@@ -78,7 +78,7 @@ firmware/firmware.hex: Makefile firmware/min-rt/min-rt.ml firmware/sld_data.s fi
 	cat firmware/pre_firmware.hex | grep -v "@" > firmware/firmware.hex
 #	riscv64-unknown-elf-objcopy -O verilog --verilog-data-width 4 firmware/firmware.elf firmware/firmware.hex
 
-SLD_FILE = firmware/min-rt/ball.sld
+SLD_FILE = firmware/min-rt/contest.sld
 firmware/sld_data.s: $(SLD_FILE) Makefile
 	ruby firmware/bin/sld2asm.rb $(SLD_FILE) > firmware/sld_data.s
 

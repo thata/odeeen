@@ -33,9 +33,9 @@ let rec sin x =
     else
       x
   in
-  let x1 = adjust x in
-  let x2 = x1 *. x1 in
-  let x3 = x1 *. x2 in
+  let x = adjust x in
+  let x2 = x *. x in
+  let x3 = x *. x2 in
   let x5 = x3 *. x2 in
   let x7 = x5 *. x2 in
   let x9 = x7 *. x2 in
@@ -1539,21 +1539,6 @@ in
   )
 in
 
-(* rt 40 40 false; *)
-rt 40 40 false;
+(* rt 128 128 false; *)
+rt 256 256 false;
 print_newline ()
-
-(* print_int (int_of_float ((sin 0.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 1.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 2.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 3.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 4.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 5.0) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((sin 10.0) *. 1000.0));
-print_newline () *)
