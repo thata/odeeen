@@ -33,9 +33,9 @@ let rec sin x =
     else
       x
   in
-  let x = adjust x in
-  let x2 = x *. x in
-  let x3 = x *. x2 in
+  let x1 = adjust x in
+  let x2 = x1 *. x1 in
+  let x3 = x1 *. x2 in
   let x5 = x3 *. x2 in
   let x7 = x5 *. x2 in
   let x9 = x7 *. x2 in
@@ -1146,6 +1146,12 @@ in
 (*MINCAML*)let rec utexture m p =
 (*NOMINCAML let utexture m p =*)
   let m_tex = o_texturetype m in
+  let _ = (
+    if dbg.(0) then (
+      (* U *)
+      print_byte 85; print_byte 58; print_int m_tex; print_byte 32
+    ) else ()
+  ) in
   (* 基本はオブジェクトの色 *)
   texture_color.(0) <- o_color_red m;
   texture_color.(1) <- o_color_green m;
@@ -1171,6 +1177,17 @@ in
   else if m_tex = 2 then
     (* y軸方向のストライプ (R-G) *)
     (
+      let foo = p.(1) *. 0.25 in
+      let bar = sin foo in
+      let _ = (
+        if dbg.(0) then (
+          (* U1 *)
+          print_byte 85; print_byte 49; print_byte 58;
+          print_int (int_of_float(foo *. 1000.0)); print_byte 58;
+          print_int (int_of_float(bar *. 1000.0)); print_byte 32
+        ) else ()
+      ) in
+
       let w2 = fsqr (sin (p.(1) *. 0.25)) in
       texture_color.(0) <- 255.0 *. w2;
       texture_color.(1) <- 255.0 *. (1.0 -. w2)
@@ -1238,7 +1255,24 @@ in
 
 (*MINCAML*)let rec raytracing nref energy =
 (*NOMINCAML let rec raytracing nref energy =*)
+  let _ = (
+    if dbg.(0) then (
+      (* C *)
+      print_byte 67; print_byte 58;
+      print_int nref; print_byte 58;
+      print_int (int_of_float (energy *. 1000.0)); print_byte 32
+    ) else ()
+  ) in
+
   let crashed_p = tracer viewpoint vscan in
+
+  let _ = (
+    if dbg.(0) then (
+      (* D *)
+      print_byte 68; print_byte 58;
+      print_byte (if crashed_p then 84 else 70); print_byte 32
+    ) else ()
+  ) in
 
   (* 反射がなく何もぶつからない時は暗闇 (nref = 0) *)
   (* 反射したあと無限遠に達する時は光源の影響を加味 *)
@@ -1276,8 +1310,32 @@ in
           br1 *. energy *. o_diffuse cobj
          )
       in
+
+      let _ = (
+        if dbg.(0) then (
+          (* E *)
+          print_byte 69; print_byte 58;
+          print_int (int_of_float (bright *. 1000.0)); print_byte 32
+        ) else ()
+      ) in
+
       utexture cobj crashed_point; (* テクスチャを計算 *)
+
+      let _ = (
+        if dbg.(0) then (
+          (* F *)
+          print_byte 70; print_byte 58; print_byte 32
+        ) else ()
+      ) in
+
       accumulate_vec_mul rgb texture_color bright;
+
+      let _ = (
+        if dbg.(0) then (
+          (* G *)
+          print_byte 71; print_byte 58; print_byte 32
+        ) else ()
+      ) in
 
       if nref > 4 then () else
       if 0.1 < energy then
@@ -1326,6 +1384,13 @@ in
 (**** データ出力 ****)
 (*MINCAML*)let rec write_rgb _ =
 (*NOMINCAML let write_rgb _ =*)
+  let _ = (
+    if dbg.(0) then (
+      (* Z *)
+      print_byte 90; print_byte 58
+    ) else ()
+  ) in
+
   (
    let red = int_of_float rgb.(0) in
    let red = if red > 255 then 255 else red in
@@ -1376,6 +1441,12 @@ in
 (*NOMINCAML let rec scan_point scanx =*)
   if scanx >= size.(0) then () else
   (
+    if dbg.(0) then (
+      (* B *)
+      print_byte 66; print_byte 58;
+      print_int scanx; print_byte 32
+    ) else ();
+
     (* 走査線番号から座標へ *)
     let sscanx = (float_of_int scanx -. scan_offset.(0)) *. scan_d.(0) in
     (* トレース方向の初期化: 視点から投影点方向へ *)
@@ -1414,6 +1485,12 @@ in
 (*NOMINCAML let rec scan_line scany =*)
   if scany < size.(0) then
     (
+      if dbg.(0) then (
+        (* A *)
+        print_newline ();
+        print_byte 65; print_byte 58;
+        print_int scany; print_byte 32
+      ) else ();
 (*      if dbg.(0) then
         (
           print_string "scanning y = ";
@@ -1461,75 +1538,22 @@ in
     scan_start ()
   )
 in
-rt 40 40 false
-(* rt 128 128 false *)
-(*
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int (int_of_float ((read_float ()) *. 1000.0));
-print_newline ();
-print_int 4649;
+
+(* rt 40 40 false; *)
+rt 40 40 false;
 print_newline ()
-*)
+
+(* print_int (int_of_float ((sin 0.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 1.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 2.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 3.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 4.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 5.0) *. 1000.0));
+print_newline ();
+print_int (int_of_float ((sin 10.0) *. 1000.0));
+print_newline () *)

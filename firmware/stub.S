@@ -15,7 +15,15 @@ _start:
 
     call min_caml_init_sld_data_index
 
-    // call min_caml_clear_screen
+    // 待機状態になったら LED に 1 を出力
+    li a0, 1
+    sw a0, 0(tp)
+
+    // サーバからスペース(32)が送られてくるまで待機
+waiting:
+    call getc
+    li t1, 32 // スペース
+    bne a0, t1, waiting
 
     // スタックポインタのアドレスとヒープポインタのアドレスを引数に min_caml_start を呼び出す
     li a0, 0x4F000000 // 実機用スタックポインタ開始アドレス
