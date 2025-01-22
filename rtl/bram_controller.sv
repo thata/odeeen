@@ -33,10 +33,11 @@ module bram_controller #(
     end
 
     // 0x00000 ~ 0x3FFFF の 256KB の BRAM を用意
-    logic [31:0] mem [0:65535]; // 256KB = 65536ワード（~ 0x3FFFF）
+    // logic [31:0] mem [0:65535]; // 256KB = 65536ワード（~ 0x3FFFF）
     // logic [31:0] mem [0:131071]; // 512KB (~ 0x7FFFF)
     // logic [31:0] mem [0:32767]; // 128KB（~ 0x1FFFF）
     // logic [31:0] mem [0:16383]; // 64KB（~ 0x0FFFF）
+    logic [31:0] mem [0:8191]; // 64KB（~ 0x0FFFF）
 
     assign mem_ready = (state_reg == STATE_SEND_READY) ? 1'b1 : 1'b0;
 
