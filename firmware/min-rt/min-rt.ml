@@ -1539,6 +1539,6 @@ in
   )
 in
 
-(* rt 128 128 false; *)
-rt 256 256 false;
+rt 128 128 false;
+(* rt 256 256 false; *)
 print_newline ()
