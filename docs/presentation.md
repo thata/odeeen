@@ -309,6 +309,7 @@ FPGAボードを用意したら、次はCPUを作成します。
   - RISC-V原典
 - System Verilog の書き方
   - FPGA Prototyping by SystemVerilog Examples
+    https://www.wiley.com/en-us/FPGA+Prototyping+by+SystemVerilog+Examples%3A+Xilinx+MicroBlaze+MCS+SoC+Edition-p-9781119282709
 
 ![bg contain right:40%](books.png)
 
