@@ -10,7 +10,7 @@ math: mathjax
 
 <!-- _class: lead invert -->
 
-# 自作 CPU 上で<br/>例のレイトレを動かした話 🚀
+# 自作 CPU 上で<br/>東大CPU実験のレイトレを動かした話 🚀
 
 @htkymtks
 
@@ -67,8 +67,10 @@ CPUや、シミュレータや、コンパイラを自作して遊んでいま�
 
 ![bg contain right:40%](ugoita.png)
 
+- 東大CPU実験とは？
 - CPUの自作からレイトレまでの流れ
 - 苦労したところ
+
 
 <!--
 今日お話しすることです。
